@@ -80,28 +80,7 @@ static vk::Bool32 VKAPI_CALL debugMessengerCallback(const vk::DebugUtilsMessageS
 std::string styledPhysicalDeviceName(const vk::PhysicalDeviceProperties2& physicalDeviceProperties)
 {
   auto name  = std::string(physicalDeviceProperties.properties.deviceName.data());
-  auto color = fmt::color::white;
-  switch(physicalDeviceProperties.properties.vendorID)
-  {
-    case gVendorID_Apple: {
-      color = fmt::color::antique_white;
-      break;
-    }
-    case gVendorID_AMD: {
-      color = fmt::color::red;
-      break;
-    }
-    case gVendorID_Intel: {
-      color = fmt::color::cornflower_blue;
-      break;
-    }
-    case gVendorID_Nvidia: {
-      color = fmt::color::green_yellow;
-      break;
-    }
-    default:
-      return name;
-  }
+  auto color = fmt::color::cornflower_blue;
   return fmt::format("{}", styled(name, fg(color)));
 }
 }  // namespace detail

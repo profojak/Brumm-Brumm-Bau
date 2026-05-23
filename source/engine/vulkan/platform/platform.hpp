@@ -33,7 +33,6 @@ namespace ptvc::rhi::platform {
 [[nodiscard]] inline vk::PhysicalDeviceFeatures getPhysicalDeviceFeatures() noexcept
 {
   constexpr auto result = vk::PhysicalDeviceFeatures()
-                              .setGeometryShader(!isApple)
                               .setTessellationShader(true)
                               .setMultiDrawIndirect(true)
                               .setDrawIndirectFirstInstance(true)
@@ -41,11 +40,6 @@ namespace ptvc::rhi::platform {
                               .setSamplerAnisotropy(true)
                               .setSampleRateShading(true)
                               .setShaderInt64(true);
-
-  if constexpr(isApple)
-  {
-    spdlog::warn("{}", STYLE_WARNING("Geometry shaders are not available on macOS"));
-  }
 
   return result;
 }
@@ -59,13 +53,7 @@ namespace ptvc::rhi::platform {
                               .setShaderInt8(true)
                               .setTimelineSemaphore(true)
                               .setHostQueryReset(true)
-                              .setScalarBlockLayout(true)
-                              .setDrawIndirectCount(!isApple);
-
-  if constexpr(isApple)
-  {
-    spdlog::warn("{}", STYLE_WARNING("DrawIndirectCount (Vulkan Core 1.2) is not available on macOS"));
-  }
+                              .setScalarBlockLayout(true);
 
   return result;
 }
