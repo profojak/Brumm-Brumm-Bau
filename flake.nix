@@ -25,15 +25,15 @@
     devShells.${system}.default = pkgs.mkShell {
       packages = with pkgs; [
         cmake
-        clang
+        clang-tools
         vulkan-headers
         vulkan-loader
         vulkan-utility-libraries
         shaderc
         moltenvk
+        vulkan-shaderc
       ];
 
-      CMAKE_PREFIX_PATH = "${vulkan-shaderc}";
       DYLD_LIBRARY_PATH="${pkgs.vulkan-loader}/lib:${pkgs.moltenvk}/lib";
       VK_ICD_FILENAMES = "${pkgs.moltenvk.out}/share/vulkan/icd.d/MoltenVK_icd.json";
     };
