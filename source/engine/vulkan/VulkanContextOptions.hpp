@@ -2,11 +2,10 @@
 
 #include "ext/Extensions.hpp"
 
-namespace ptvc::rhi
+namespace ptvc::rhi {
+struct VulkanContextOptions
 {
-    struct VulkanContextOptions
-    {
-        // Function used to configure Ex
-        std::function<void(Extensions&)> extensions;
-    };
-}
+  // Function used to configure Ex
+  std::function<void(Extensions&)> extensions;
+};
+}  // namespace ptvc::rhi

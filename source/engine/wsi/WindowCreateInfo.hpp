@@ -3,11 +3,10 @@
 #include <string_view>
 #include <lib/size.hpp>
 
-namespace ptvc::wsi
+namespace ptvc::wsi {
+struct WindowCreateInfo
 {
-    struct WindowCreateInfo
-    {
-        Size2D           size         = { 1280u, 720u };
-        std::string_view title        = "ptvc-framework";
-    };
-}
+  Size2D           size  = {1280u, 720u};
+  std::string_view title = "ptvc-framework";
+};
+}  // namespace ptvc::wsi

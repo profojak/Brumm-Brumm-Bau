@@ -5,48 +5,47 @@
 #include "vulkan/VulkanContext.hpp"
 #include "wsi/sdl/SDLWindow.hpp"
 
-namespace ptvc::ui
+namespace ptvc::ui {
+struct ImGuiIntegrationParams
 {
-    struct ImGuiIntegrationParams
-    {
-        SPtr<wsi::SDLWindow>    window;
-        rhi::VulkanContext*     vulkanContext;
-    };
+  SPtr<wsi::SDLWindow> window;
+  rhi::VulkanContext*  vulkanContext;
+};
 
-    class ImGuiIntegration
-    {
-    public:
-        DISABLE_COPY(ImGuiIntegration);
+class ImGuiIntegration
+{
+public:
+  DISABLE_COPY(ImGuiIntegration);
 
-        [[nodiscard]] static Result<UPtr<ImGuiIntegration>> create(const ImGuiIntegrationParams& params) noexcept;
+  [[nodiscard]] static Result<UPtr<ImGuiIntegration>> create(const ImGuiIntegrationParams& params) noexcept;
 
-        ~ImGuiIntegration();
+  ~ImGuiIntegration();
 
-        void render(const rhi::Frame& frame, const std::function<void()>& uiDraws) noexcept;
+  void render(const rhi::Frame& frame, const std::function<void()>& uiDraws) noexcept;
 
-        void onEvent(const SDL_Event& event) noexcept;
+  void onEvent(const SDL_Event& event) noexcept;
 
-        bool wantCaptureInput() noexcept;
+  bool wantCaptureInput() noexcept;
 
-    private:
-        explicit ImGuiIntegration(const ImGuiIntegrationParams& params);
+private:
+  explicit ImGuiIntegration(const ImGuiIntegrationParams& params);
 
-        [[nodiscard]] Result<void> init_VulkanResources() noexcept;
-        [[nodiscard]] Result<void> init_ImGui() const noexcept;
+  [[nodiscard]] Result<void> init_VulkanResources() noexcept;
+  [[nodiscard]] Result<void> init_ImGui() const noexcept;
 
-        bool wantCaptureMouse() noexcept;
+  bool wantCaptureMouse() noexcept;
 
-        bool wantCaptureKeyboard() noexcept;
+  bool wantCaptureKeyboard() noexcept;
 
 
-        // Vulkan resources for ImGui
-        vk::DescriptorPool      mDescriptorPool;
-        vk::PipelineCache       mPipelineCache;
-        vk::RenderingInfo       mRenderingInfo;
-        vk::DebugUtilsLabelEXT  mDebugLabel;
+  // Vulkan resources for ImGui
+  vk::DescriptorPool     mDescriptorPool;
+  vk::PipelineCache      mPipelineCache;
+  vk::RenderingInfo      mRenderingInfo;
+  vk::DebugUtilsLabelEXT mDebugLabel;
 
-        SPtr<wsi::SDLWindow>    mWindow;
-        rhi::VulkanContext*     mRHI;
-        SPtr<rhi::Device>       mDevice;
-    };
-}
+  SPtr<wsi::SDLWindow> mWindow;
+  rhi::VulkanContext*  mRHI;
+  SPtr<rhi::Device>    mDevice;
+};
+}  // namespace ptvc::ui

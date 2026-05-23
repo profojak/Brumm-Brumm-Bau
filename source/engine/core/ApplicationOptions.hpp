@@ -2,11 +2,10 @@
 #include "VulkanContextOptions.hpp"
 #include "wsi/WindowCreateInfo.hpp"
 
-namespace ptvc
+namespace ptvc {
+struct ApplicationOptions
 {
-    struct ApplicationOptions
-    {
-        wsi::WindowCreateInfo     windowOptions = {};
-        rhi::VulkanContextOptions vulkanOptions = {};
-    };
-}
+  wsi::WindowCreateInfo     windowOptions = {};
+  rhi::VulkanContextOptions vulkanOptions = {};
+};
+}  // namespace ptvc
