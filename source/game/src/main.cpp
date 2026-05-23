@@ -5,13 +5,13 @@
 
 int main()
 {
-  spdlog::set_pattern("[%^%l%$] %v");
+  spdlog::set_pattern("[%H:%M:%S.%e] [%^%l%$] %v");
 
   auto options = ptvc::ApplicationOptions{
       .windowOptions =
           {
               .size  = {1280, 720},
-              .title = "PTVC Framework : Example",
+              .title = "Brumm Brumm Bau",
           },
       .vulkanOptions =
           {
@@ -20,11 +20,7 @@ int main()
                 using namespace ptvc::rhi;
                 extensions.addPlatformRequiredExtensions()
                     .addExtension(vk::KHRSwapchainExtensionName, FeatureRequest::Required)
-                    .addExtension(vk::KHRDeferredHostOperationsExtensionName, FeatureRequest::Required)
-                    .addExtension<VulkanAccelerationStructureExt>(FeatureRequest::Optional)
-                    .addExtension<VulkanRayQueryExt>(FeatureRequest::Optional)
-                    .addExtension<VulkanRayTracingPipelineExt>(FeatureRequest::Optional)
-                    .addExtension<VulkanMeshShaderExt>(FeatureRequest::Optional);
+                    .addExtension(vk::KHRDeferredHostOperationsExtensionName, FeatureRequest::Required);
               },
           },
   };

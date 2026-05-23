@@ -17,5 +17,5 @@ add_subdirectory(external/VulkanMemoryAllocator EXCLUDE_FROM_ALL)
 # Engine library
 add_subdirectory(source/engine)
 
-# Example project
-add_subdirectory(source/example)
+# Game
+add_subdirectory(source/game)
