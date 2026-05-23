@@ -13,3 +13,6 @@
 [submodule "VulkanMemoryAllocator"]
 	path = external/VulkanMemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "external/Jolt"]
+	path = external/Jolt
+	url = https://github.com/jrouwe/JoltPhysics
