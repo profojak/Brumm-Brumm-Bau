@@ -1,6 +1,7 @@
 #include <spdlog/spdlog.h>
 
 #include <core/Application.hpp>
+#include <scene/ArcballCamera.hpp>
 #include "GameLayer.hpp"
 
 int main()
