@@ -31,8 +31,8 @@ add_library(ptvc-engine
     scene/Scene.cpp
     render/DebugLayer.hpp
     render/DebugLayer.cpp
-    scene/ArcballCamera.hpp
-    scene/ArcballCamera.cpp
+    scene/FreeCamera.hpp
+    scene/FreeCamera.cpp
     core/IO.hpp
     core/IO.cpp
     core/ApplicationOptions.hpp
