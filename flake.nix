@@ -14,6 +14,7 @@
         vulkan-headers
         vulkan-loader
         vulkan-utility-libraries
+        vulkan-validation-layers
         shaderc.dev
         shaderc.lib
       ];
@@ -26,9 +27,6 @@
       packages = with pkgs; [
         cmake
         clang-tools
-        vulkan-headers
-        vulkan-loader
-        vulkan-utility-libraries
         shaderc
         moltenvk
         vulkan-shaderc
