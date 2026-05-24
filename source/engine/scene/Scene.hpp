@@ -84,6 +84,11 @@ public:
    */
   [[nodiscard]] const SPtr<rhi::Descriptor>& getDescriptor() const noexcept;
 
+  /**
+   * @return Camera
+   */
+  [[nodiscard]] ICamera& getCamera() noexcept;
+
 private:
   // Create the Scene Descriptor and related resources (e.g. uniform buffers).
   void createSceneDescriptor() noexcept;

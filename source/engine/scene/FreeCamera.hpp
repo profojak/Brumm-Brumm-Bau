@@ -43,6 +43,11 @@ public:
   [[nodiscard]] CameraData getCameraData(float aspect) noexcept override;
 
   /**
+   * Get camera uniform data.
+   */
+  [[nodiscard]] CameraData getCameraData() noexcept override;
+
+  /**
    * Handle mouse (button and scroll) and keyboard events
    * @param event
    */
@@ -71,6 +76,7 @@ private:
   float mFOV  = 65.0f;
   float mNear = 0.01f;
   float mFar  = 256.0f;
+  float aspect;
 
   float mMouseX, mMouseY;
   float mYaw, mPitch;

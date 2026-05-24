@@ -21,6 +21,7 @@ public:
   virtual ~ICamera() = default;
 
   [[nodiscard]] virtual CameraData getCameraData(float aspect) noexcept = 0;
+  [[nodiscard]] virtual CameraData getCameraData() noexcept             = 0;
 
   virtual void onEvent(const SDL_Event& event) noexcept = 0;
   virtual void onUpdate(float deltaTime) noexcept       = 0;

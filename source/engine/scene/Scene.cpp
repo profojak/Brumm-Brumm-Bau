@@ -49,6 +49,11 @@ const SPtr<rhi::Descriptor>& Scene::getDescriptor() const noexcept
   return mDescriptor;
 }
 
+ICamera& Scene::getCamera() noexcept
+{
+  return *mCamera;
+}
+
 void Scene::createSceneDescriptor() noexcept
 {
   for(auto i = 0; i < mVulkanContext->getSwapchain()->getImageCount(); i++)

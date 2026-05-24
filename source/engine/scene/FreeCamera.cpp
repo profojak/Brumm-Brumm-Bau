@@ -1,8 +1,10 @@
 #include "FreeCamera.hpp"
+#include "scene/ICamera.hpp"
 
 namespace ptvc {
 FreeCamera::FreeCamera(const float aspect, const float fov, const float near, const float far)
-    : mMouseX(0.0f)
+    : aspect(aspect)
+    , mMouseX(0.0f)
     , mMouseY(0.0f)
     , mYaw(0.0f)
     , mPitch(0.0f)
@@ -36,6 +38,11 @@ CameraData FreeCamera::getCameraData(const float aspect) noexcept
       .nearPlane   = mNear,
       .farPlane    = mFar,
   };
+}
+
+CameraData FreeCamera::getCameraData() noexcept
+{
+  return getCameraData(aspect);
 }
 
 void FreeCamera::onEvent(const SDL_Event& event) noexcept

@@ -31,6 +31,10 @@ int main()
 
   // Set scene, register layers
   app->setScene<ptvc::Scene>();
+
+  // Initialize a free-fly camera for viewing the terrain
+  app->getScene()->initCamera<ptvc::FreeCamera>(1280.0f / 720.0f);
+
   app->registerLayer<GameLayer>();
 
   // Start main loop
