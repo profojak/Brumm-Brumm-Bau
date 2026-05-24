@@ -58,10 +58,12 @@ public:
 
 private:
   void createDebugPipeline() noexcept;
+  void createWireframePipeline() noexcept;
 
   bool                mIsFirstRender = true;
   SPtr<rhi::Image>    mDepthBuffer;
   SPtr<rhi::Pipeline> mPipeline;
+  SPtr<rhi::Pipeline> mWireframePipeline;
 
   std::mt19937              mEngine;
   std::array<glm::vec4, 16> mObjectColors = {};

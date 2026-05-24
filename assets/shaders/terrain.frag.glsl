@@ -57,7 +57,7 @@ void main()
     }
     else if (pc.debugRenderMode == RENDER_MODE_WIREFRAME)
     {
-        color = vec3(1.0);
+        color = colorLOD(inLOD);
     }
     else if (pc.debugRenderMode == RENDER_MODE_GAME)
     {

@@ -17,6 +17,7 @@ Terrain::Terrain(const SPtr<rhi::VulkanContext>& vulkanContext, const SPtr<rhi::
   loadHeightmap();
   createTerrainDescriptor();
   createPipeline();
+  createWireframePipeline();
 }
 
 Terrain::~Terrain()
@@ -40,8 +41,9 @@ void Terrain::onRender(const rhi::Frame& frame, const DebugRenderMode debugRende
 
   const int32_t modeValue = std::to_underlying(debugRenderMode);
 
-  mPipeline->bind(frame, frame.commandBuffer);
-  mPipeline->pushConstant(&modeValue, frame.commandBuffer);
+  auto& pipeline = (debugRenderMode == DebugRenderMode::eWireframe) ? mWireframePipeline : mPipeline;
+  pipeline->bind(frame, frame.commandBuffer);
+  pipeline->pushConstant(&modeValue, frame.commandBuffer);
 
   frame.commandBuffer.bindVertexBuffers(0, 1, &mVertexBuffer->getHandle(), offsets);
   frame.commandBuffer.bindIndexBuffer(mIndexBuffer->getHandle(), 0, vk::IndexType::eUint32);
@@ -313,6 +315,31 @@ void Terrain::createPipeline() noexcept
                     state.rasterizationState.setCullMode(vk::CullModeFlagBits::eNone);
                   })
                   .setName("TerrainPipeline")
+                  .create(mVulkanContext->getDevice());
+}
+
+void Terrain::createWireframePipeline() noexcept
+{
+  using enum vk::ShaderStageFlagBits;
+
+  mWireframePipeline = rhi::GraphicsPipelineBuilder()
+                  .addDescriptor(0, mSceneDescriptor)
+                  .addDescriptor(1, mDescriptor)
+                  .addPushConstantRange({eFragment, 0, sizeof(int32_t)})
+                  .addVertexType<Vertex>()
+                  .addShader({"assets/shaders/terrain.vert.glsl", eVertex})
+                  .addShader({"assets/shaders/terrain.tesc.glsl", eTessellationControl})
+                  .addShader({"assets/shaders/terrain.tese.glsl", eTessellationEvaluation})
+                  .addShader({"assets/shaders/terrain.frag.glsl", eFragment})
+                  .addAttachment(vk::Format::eB8G8R8A8Unorm)
+                  .setDepthFormat(vk::Format::eD32Sfloat)
+                  .configure([](rhi::GraphicsPipelineState& state) {
+                    state.inputAssemblyState.setTopology(vk::PrimitiveTopology::ePatchList);
+                    state.tessellationState = vk::PipelineTessellationStateCreateInfo().setPatchControlPoints(4);
+                    state.rasterizationState.setCullMode(vk::CullModeFlagBits::eNone);
+                    state.rasterizationState.setPolygonMode(vk::PolygonMode::eLine);
+                  })
+                  .setName("TerrainWireframePipeline")
                   .create(mVulkanContext->getDevice());
 }
 

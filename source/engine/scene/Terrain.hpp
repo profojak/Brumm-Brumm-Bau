@@ -42,6 +42,7 @@ private:
   void loadHeightmap() noexcept;
   void createTerrainDescriptor() noexcept;
   void createPipeline() noexcept;
+  void createWireframePipeline() noexcept;
 
   SPtr<rhi::VulkanContext> mVulkanContext;
   SPtr<rhi::Descriptor>    mSceneDescriptor;
@@ -62,8 +63,9 @@ private:
   // Terrain descriptor
   SPtr<rhi::Descriptor> mDescriptor;
 
-  // Pipeline
+  // Pipelines
   SPtr<rhi::Pipeline> mPipeline;
+  SPtr<rhi::Pipeline> mWireframePipeline;
 };
 
 }  // namespace ptvc

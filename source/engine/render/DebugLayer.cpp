@@ -32,6 +32,7 @@ DebugLayer::DebugLayer()
   mScene          = app->getScene();
 
   createDebugPipeline();
+  createWireframePipeline();
 
   mEngine = std::mt19937(std::random_device{}());
   std::uniform_real_distribution c(0.0f, 1.0f);
@@ -118,8 +119,9 @@ void DebugLayer::onRender(const rhi::Frame& frame) noexcept
         .objIndex   = static_cast<int32_t>(objIndex),
     };
 
-    mPipeline->bind(frame, frame.commandBuffer);
-    mPipeline->pushConstant(&pushConstant1, frame.commandBuffer);
+    auto& pipeline = (mConfig.mode == DebugRenderMode::eWireframe) ? mWireframePipeline : mPipeline;
+    pipeline->bind(frame, frame.commandBuffer);
+    pipeline->pushConstant(&pushConstant1, frame.commandBuffer);
 
     obj->getGeometry()->draw(frame.commandBuffer);
   }
@@ -171,6 +173,13 @@ void DebugLayer::onDrawUI() noexcept
   ImGui::SameLine();
   ImGui::Text("Visualize vertex UVs");
 
+  if(ImGui::SmallButton("Wireframe"))
+  {
+    mConfig.mode = DebugRenderMode::eWireframe;
+  }
+  ImGui::SameLine();
+  ImGui::Text("Show wireframe");
+
   ImGui::End();
 }
 
@@ -203,5 +212,23 @@ void DebugLayer::createDebugPipeline() noexcept
                   .setDepthFormat(vk::Format::eD32Sfloat)
                   .setName("DebugPipeline")
                   .create(mVulkanContext->getDevice());
+}
+
+void DebugLayer::createWireframePipeline() noexcept
+{
+  using enum vk::ShaderStageFlagBits;
+  mWireframePipeline = rhi::GraphicsPipelineBuilder()
+                           .addDescriptor(0, mScene->getDescriptor())
+                           .addPushConstantRange({eVertex | eFragment, 0, sizeof(DebugPipeline_PCS)})
+                           .addVertexType<Vertex>()
+                           .addShader({"assets/shaders/debug.vert.glsl", eVertex})
+                           .addShader({"assets/shaders/debug.frag.glsl", eFragment})
+                           .addAttachment(vk::Format::eB8G8R8A8Unorm)
+                           .setDepthFormat(vk::Format::eD32Sfloat)
+                           .configure([](rhi::GraphicsPipelineState& state) {
+                             state.rasterizationState.setPolygonMode(vk::PolygonMode::eLine);
+                           })
+                           .setName("DebugWireframePipeline")
+                           .create(mVulkanContext->getDevice());
 }
 }  // namespace ptvc
