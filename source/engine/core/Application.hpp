@@ -78,6 +78,7 @@ private:
 
   bool mRunning   = false;
   bool mMinimized = false;
+  bool mShowImGui  = false;
 
   UPtr<Scene> mScene;
 

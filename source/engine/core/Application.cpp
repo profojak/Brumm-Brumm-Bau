@@ -56,6 +56,11 @@ void Application::run()
           {
             mRunning = false;
           }
+          if(keyboardEvent.scancode == SDL_SCANCODE_I)
+          {
+            mShowImGui = !mShowImGui;
+            spdlog::debug("Toggled ImGUI: {}", STYLE_BOOL(mShowImGui, "ON", "OFF"));
+          }
           break;
         }
         case SDL_EVENT_QUIT: {
@@ -133,18 +138,21 @@ void Application::run()
 
       // Render UI
       mImGui->render(frame, [&]() -> void {
-        ImGui::Begin("PTVC Framework");
+        if(mShowImGui)
         {
-          const ImGuiIO& io = ImGui::GetIO();
+          ImGui::Begin("PTVC Framework");
+          {
+            const ImGuiIO& io = ImGui::GetIO();
 
-          ImGui::Text("GPU: %s", mVulkanContext->getDevice()->getName().c_str());
-          ImGui::Text("FPS: %.2f (%.2gms)", io.Framerate, io.Framerate ? 1000.0f / io.Framerate : 0.0f);
-        }
-        ImGui::End();
+            ImGui::Text("GPU: %s", mVulkanContext->getDevice()->getName().c_str());
+            ImGui::Text("FPS: %.2f (%.2gms)", io.Framerate, io.Framerate ? 1000.0f / io.Framerate : 0.0f);
+          }
+          ImGui::End();
 
-        for(const auto& layer : mLayers)
-        {
-          layer->onDrawUI();
+          for(const auto& layer : mLayers)
+          {
+            layer->onDrawUI();
+          }
         }
       });
 
