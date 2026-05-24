@@ -36,8 +36,8 @@ layout(push_constant) uniform TerrainPushConstant {
 
 vec3 colorLOD(float lod)
 {
-    float t = log2(lod) / 6.0;
-    return vec3(clamp(2.0 * (1.0 - t), 0.0, 1.0), 0.0, clamp(2.0 * t, 0.0, 1.0));
+    float t = log2(lod) / 3.0;
+    return vec3(clamp((1.0 - t), 0.0, 1.0), 0.0, clamp(t, 0.0, 1.0));
 }
 
 void main()
