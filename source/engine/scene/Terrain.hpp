@@ -15,7 +15,7 @@ enum class DebugRenderMode : int32_t;
 
 struct TerrainTessellationData
 {
-  float tessellationFactor = 32.0f;
+  float tessellationFactor;
 };
 
 class Terrain
@@ -30,7 +30,7 @@ public:
   /**
    * Update tessellation uniform buffer with current camera data
    */
-  void updateTessellationData(const CameraData& cameraData, float tessellationFactor, float displacementFactor) noexcept;
+  void updateTessellationData(const CameraData& cameraData, float tessellationFactor) noexcept;
 
   [[nodiscard]] SPtr<rhi::Pipeline> getPipeline() const noexcept { return mPipeline; }
 

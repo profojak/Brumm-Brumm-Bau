@@ -23,24 +23,21 @@ layout(set = 1, binding = 0) uniform TerrainTessellationData {
     float tessellationFactor;
 } tessData;
 
-// Base distance thresholds
-const float LOD_DISTANCES[7] = {
-        1.0,
-        3.0,
-        6.0,
-        10.0,
+// Base distance thresholds (coarser, fewer LODs)
+const float LOD_DISTANCES[4] = {
+        5.0,
         16.0,
-        23.0,
-        32.0
+        32.0,
+        64.0
     };
 
 float getTessellationLevel(vec3 p0, vec3 p1, float lodScale)
 {
     float dist = length((p0.xz + p1.xz) * 0.5 - cameraData.position.xz) / lodScale;
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < 3; i++)
     {
         if (dist < LOD_DISTANCES[i])
-            return float(1 << (6 - i));
+            return float(1 << (3 - i));
     }
     return 1.0;
 }

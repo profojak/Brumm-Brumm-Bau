@@ -28,7 +28,7 @@ Terrain::~Terrain()
   }
 }
 
-void Terrain::updateTessellationData(const CameraData& cameraData, const float tessellationFactor, const float displacementFactor) noexcept
+void Terrain::updateTessellationData(const CameraData& cameraData, const float tessellationFactor) noexcept
 {
   mTessellationData.tessellationFactor = tessellationFactor;
 
@@ -52,7 +52,7 @@ void Terrain::onRender(const rhi::Frame& frame, const DebugRenderMode debugRende
 
 void Terrain::generateBaseMesh() noexcept
 {
-  const uint32_t patchSize = 64;
+  const uint32_t patchSize = 32;
   const float    wx        = 2.0f;
   const float    wy        = 2.0f;
   const float    uvScale   = 1.0f;
@@ -150,6 +150,8 @@ void Terrain::loadHeightmap() noexcept
   {
     exitWithError("Failed to load heightmap: {}", filepath);
   }
+
+  spdlog::info("Heightmap loaded from disk: {}x{} ({} channels)", width, height, channels);
 
   const auto imageSize = static_cast<vk::DeviceSize>(width) * static_cast<vk::DeviceSize>(height) * sizeof(uint16_t);
 
@@ -311,8 +313,7 @@ void Terrain::createPipeline() noexcept
                     // Use patch list topology with 4 control points per patch
                     state.inputAssemblyState.setTopology(vk::PrimitiveTopology::ePatchList);
                     state.tessellationState = vk::PipelineTessellationStateCreateInfo().setPatchControlPoints(4);
-                    // Disable face culling so both sides are visible (useful for terrain)
-                    state.rasterizationState.setCullMode(vk::CullModeFlagBits::eNone);
+                    state.rasterizationState.setCullMode(vk::CullModeFlagBits::eBack);
                   })
                   .setName("TerrainPipeline")
                   .create(mVulkanContext->getDevice());
@@ -323,24 +324,24 @@ void Terrain::createWireframePipeline() noexcept
   using enum vk::ShaderStageFlagBits;
 
   mWireframePipeline = rhi::GraphicsPipelineBuilder()
-                  .addDescriptor(0, mSceneDescriptor)
-                  .addDescriptor(1, mDescriptor)
-                  .addPushConstantRange({eFragment, 0, sizeof(int32_t)})
-                  .addVertexType<Vertex>()
-                  .addShader({"assets/shaders/terrain.vert.glsl", eVertex})
-                  .addShader({"assets/shaders/terrain.tesc.glsl", eTessellationControl})
-                  .addShader({"assets/shaders/terrain.tese.glsl", eTessellationEvaluation})
-                  .addShader({"assets/shaders/terrain.frag.glsl", eFragment})
-                  .addAttachment(vk::Format::eB8G8R8A8Unorm)
-                  .setDepthFormat(vk::Format::eD32Sfloat)
-                  .configure([](rhi::GraphicsPipelineState& state) {
-                    state.inputAssemblyState.setTopology(vk::PrimitiveTopology::ePatchList);
-                    state.tessellationState = vk::PipelineTessellationStateCreateInfo().setPatchControlPoints(4);
-                    state.rasterizationState.setCullMode(vk::CullModeFlagBits::eNone);
-                    state.rasterizationState.setPolygonMode(vk::PolygonMode::eLine);
-                  })
-                  .setName("TerrainWireframePipeline")
-                  .create(mVulkanContext->getDevice());
+                           .addDescriptor(0, mSceneDescriptor)
+                           .addDescriptor(1, mDescriptor)
+                           .addPushConstantRange({eFragment, 0, sizeof(int32_t)})
+                           .addVertexType<Vertex>()
+                           .addShader({"assets/shaders/terrain.vert.glsl", eVertex})
+                           .addShader({"assets/shaders/terrain.tesc.glsl", eTessellationControl})
+                           .addShader({"assets/shaders/terrain.tese.glsl", eTessellationEvaluation})
+                           .addShader({"assets/shaders/terrain.frag.glsl", eFragment})
+                           .addAttachment(vk::Format::eB8G8R8A8Unorm)
+                           .setDepthFormat(vk::Format::eD32Sfloat)
+                           .configure([](rhi::GraphicsPipelineState& state) {
+                             state.inputAssemblyState.setTopology(vk::PrimitiveTopology::ePatchList);
+                             state.tessellationState = vk::PipelineTessellationStateCreateInfo().setPatchControlPoints(4);
+                             state.rasterizationState.setCullMode(vk::CullModeFlagBits::eBack);
+                             state.rasterizationState.setPolygonMode(vk::PolygonMode::eLine);
+                           })
+                           .setName("TerrainWireframePipeline")
+                           .create(mVulkanContext->getDevice());
 }
 
 }  // namespace ptvc

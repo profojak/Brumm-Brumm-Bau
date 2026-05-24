@@ -27,6 +27,10 @@ layout(set = 1, binding = 0) uniform TerrainTessellationData {
 
 layout(set = 1, binding = 1) uniform sampler2D heightMap;
 
+// Terrain parameters
+const float HEIGHT_SCALE = 12.0;
+const float TERRAIN_WORLD_SIZE = 62.0;
+
 // Sample height from heightmap at given UV
 float sampleHeight(vec2 uv)
 {
@@ -44,17 +48,18 @@ void main()
 
     // Sample height and displace along Y axis
     float height = sampleHeight(interpolatedUV);
-    worldPos.y += height * 20.0;
+    worldPos.y += height * HEIGHT_SCALE;
 
     // Compute normal from heightmap gradient using central differences
-    float texelSize = 1.0 / 128.0; // Heightmap resolution
+    float texelSize = 1.0 / float(textureSize(heightMap, 0).x);
     float hL = sampleHeight(interpolatedUV - vec2(texelSize, 0.0));
     float hR = sampleHeight(interpolatedUV + vec2(texelSize, 0.0));
     float hD = sampleHeight(interpolatedUV - vec2(0.0, texelSize));
     float hU = sampleHeight(interpolatedUV + vec2(0.0, texelSize));
 
     // Construct normal vector using gradient
-    vec3 normal = normalize(vec3(hL - hR, 12.6 * texelSize, hD - hU));
+    float normalY = 2.0 * TERRAIN_WORLD_SIZE * texelSize / HEIGHT_SCALE;
+    vec3 normal = normalize(vec3(hL - hR, normalY, hD - hU));
 
     gl_Position = cameraData.proj * cameraData.view * vec4(worldPos, 1.0);
     outWorldPosition = worldPos;
