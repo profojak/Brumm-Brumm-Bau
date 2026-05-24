@@ -20,25 +20,25 @@ enum SceneDescriptorBindings : uint32_t
 };
 
 /**
-     * Scene (base) class for managing cameras and game objects.
-     */
+ * Scene (base) class for managing cameras and game objects.
+ */
 class Scene
 {
 public:
   /**
-         * Create a Scene
-         * @param vulkanContext
-         */
+   * Create a Scene
+   * @param vulkanContext
+   */
   explicit Scene(const SPtr<rhi::VulkanContext>& vulkanContext);
 
   virtual ~Scene() = default;
 
   /**
-         * Add a new GameObject to the Scene.
-         * @tparam T GameObject type
-         * @param args Constructor arguments
-         * @return Pointer to the new GameObject
-         */
+   * Add a new GameObject to the Scene.
+   * @tparam T GameObject type
+   * @param args Constructor arguments
+   * @return Pointer to the new GameObject
+   */
   template <class T = GameObject, class... Args>
     requires std::is_base_of_v<GameObject, T>
   T* addGameObject(Args&&... args) noexcept
@@ -48,11 +48,11 @@ public:
   }
 
   /**
-         * Create and set the Camera for the Scene
-         * @tparam T Camera type
-         * @param args Constructor arguments
-         * @return Pointer to the new Camera
-         */
+   * Create and set the Camera for the Scene
+   * @tparam T Camera type
+   * @param args Constructor arguments
+   * @return Pointer to the new Camera
+   */
   template <class T, class... Args>
     requires std::is_base_of_v<ICamera, T>
   T* initCamera(Args&&... args) noexcept
@@ -62,26 +62,26 @@ public:
   }
 
   /**
-         * Handle events related to cameras and game objects.
-         * @param event
-         */
+   * Handle events related to cameras and game objects.
+   * @param event
+   */
   virtual void onEvent(const SDL_Event& event) noexcept;
 
   /**
-         * Handle updates related to cameras and game objects.
-         * @param deltaTime Delta time in seconds
-         * @param frame Current frame
-         */
+   * Handle updates related to cameras and game objects.
+   * @param deltaTime Delta time in seconds
+   * @param frame Current frame
+   */
   virtual void onUpdate(float deltaTime, const rhi::Frame& frame) noexcept;
 
   /**
-         * @return Vector of GameObjects
-         */
+   * @return Vector of GameObjects
+   */
   [[nodiscard]] const std::vector<UPtr<GameObject>>& getGameObjects() const noexcept;
 
   /**
-         * @return Scene Descriptor
-         */
+   * @return Scene Descriptor
+   */
   [[nodiscard]] const SPtr<rhi::Descriptor>& getDescriptor() const noexcept;
 
 private:
@@ -98,11 +98,11 @@ private:
   SPtr<rhi::Buffer> mDirectionalLight;
 
   /**
-         * [Scene Descriptor]
-         * - Descriptor Scene related resources with bindings defined in the
-         * "SceneDescriptorBindings" enum at the top of this file.
-         * - The number of sets is at least the number of frames in flight.
-         */
+   * [Scene Descriptor]
+   * - Descriptor Scene related resources with bindings defined in the
+   * "SceneDescriptorBindings" enum at the top of this file.
+   * - The number of sets is at least the number of frames in flight.
+   */
   SPtr<rhi::Descriptor> mDescriptor;
 
   // Camera uniform buffers (count = no. descriptor sets)
