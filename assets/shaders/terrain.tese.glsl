@@ -54,7 +54,7 @@ void main()
     float hU = sampleHeight(interpolatedUV + vec2(0.0, texelSize));
 
     // Construct normal vector using gradient
-    vec3 normal = normalize(vec3(hL - hR, 2.0 * texelSize / 20.0, hD - hU));
+    vec3 normal = normalize(vec3(hL - hR, 12.6 * texelSize, hD - hU));
 
     gl_Position = cameraData.proj * cameraData.view * vec4(worldPos, 1.0);
     outWorldPosition = worldPos;
