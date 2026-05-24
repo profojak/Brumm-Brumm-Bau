@@ -4,6 +4,7 @@
 #include <vulkan/VulkanContext.hpp>
 #include <core/Layer.hpp>
 #include <scene/Scene.hpp>
+#include <scene/Terrain.hpp>
 #include <Image.hpp>
 
 class GameLayer : public ptvc::ILayer
@@ -29,4 +30,6 @@ private:
   SPtr<spdlog::logger>           mLogger;
 
   SPtr<ptvc::rhi::Image> mDepthBuffer;
+
+  UPtr<ptvc::Terrain> mTerrain;
 };

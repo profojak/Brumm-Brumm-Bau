@@ -171,20 +171,22 @@ UPtr<Pipeline> GraphicsPipelineBuilder::create(const SPtr<Device>& device) noexc
                                  .setDepthAttachmentFormat(mState.depthFormat)
                                  .setStencilAttachmentFormat(mState.stencilFormat);
 
-  const auto graphicsPipelineCreateInfo = vk::GraphicsPipelineCreateInfo()
-                                              .setPInputAssemblyState(&mState.inputAssemblyState)
-                                              .setPRasterizationState(&mState.rasterizationState)
-                                              .setPMultisampleState(&mState.multisampleState)
-                                              .setPDepthStencilState(&mState.depthStencilState)
-                                              .setPViewportState(&mState.viewportState)
-                                              .setPDynamicState(&mState.dynamicState)
-                                              .setPColorBlendState(&mState.colorBlendState)
-                                              .setPVertexInputState(&mState.vertexInputState)
-                                              .setStageCount(shaderStageInfos.size())
-                                              .setPStages(shaderStageInfos.data())
-                                              .setLayout(result->mPipelineLayout)
-                                              .setRenderPass(nullptr)
-                                              .setPNext(&renderingInfo);
+  auto graphicsPipelineCreateInfo = vk::GraphicsPipelineCreateInfo()
+                                        .setPInputAssemblyState(&mState.inputAssemblyState)
+                                        .setPRasterizationState(&mState.rasterizationState)
+                                        .setPMultisampleState(&mState.multisampleState)
+                                        .setPDepthStencilState(&mState.depthStencilState)
+                                        .setPViewportState(&mState.viewportState)
+                                        .setPDynamicState(&mState.dynamicState)
+                                        .setPColorBlendState(&mState.colorBlendState)
+                                        .setPVertexInputState(&mState.vertexInputState)
+                                        .setStageCount(shaderStageInfos.size())
+                                        .setPStages(shaderStageInfos.data())
+                                        .setLayout(result->mPipelineLayout)
+                                        .setRenderPass(nullptr)
+                                        .setPNext(&renderingInfo);
+  if(mState.tessellationState.patchControlPoints > 0)
+    graphicsPipelineCreateInfo.setPTessellationState(&mState.tessellationState);
 
   result->mPipeline           = device->getHandle().createGraphicsPipeline(nullptr, graphicsPipelineCreateInfo).value;
   result->mDescriptors        = mDescriptors;

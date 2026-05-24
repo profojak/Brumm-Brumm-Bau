@@ -10,16 +10,25 @@ GameLayer::GameLayer()
   mScene          = app->getScene();
 
   createDepthBuffer();
+
+  mTerrain = makeUnique<ptvc::Terrain>(mVulkanContext, mScene->getDescriptor());
 }
 
 GameLayer::~GameLayer() {}
 
-void GameLayer::onEvent(const SDL_Event& event) noexcept {}
+void GameLayer::onEvent(const SDL_Event& event) noexcept
+{
+  // Forward events to the scene
+  mScene->onEvent(event);
+}
 
 void GameLayer::onUpdate(const float deltaTime) noexcept {}
 
 void GameLayer::onRender(const ptvc::rhi::Frame& frame) noexcept
 {
+  const auto cameraData = mScene->getCamera().getCameraData();
+  mTerrain->updateTessellationData(cameraData, 0.75f, 32.0f);
+
   // Transition swapchain image
   const auto colorBarrier = mVulkanContext->getSwapchain()->getBarrier(
       frame.acquiredImageIndex, {.layout = vk::ImageLayout::eColorAttachmentOptimal,
@@ -66,6 +75,9 @@ void GameLayer::onRender(const ptvc::rhi::Frame& frame) noexcept
                                  .setRenderArea(vk::Rect2D{{0, 0}, mVulkanContext->getSwapchain()->getExtent()});
 
   frame.commandBuffer.beginRendering(renderingInfo);
+
+  // Render the tessellated terrain
+  mTerrain->onRender(frame);
 
   frame.commandBuffer.endRendering();
 

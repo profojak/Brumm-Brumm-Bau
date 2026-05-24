@@ -7,7 +7,6 @@
 #include "Pipeline.hpp"
 #include "Shaders.hpp"
 #include "VertexType.hpp"
-#include "../VulkanCore.hpp"
 
 namespace ptvc::rhi {
 namespace detail {
@@ -52,8 +51,8 @@ static vk::PipelineColorBlendAttachmentState makeColorBlendAttachmentState(
 }  // namespace detail
 
 /**
-     * Struct containing all graphics pipeline state related data
-     */
+* Struct containing all graphics pipeline state related data
+*/
 struct GraphicsPipelineState
 {
   vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState = detail::makeInputAssemblyState();
@@ -64,6 +63,7 @@ struct GraphicsPipelineState
   vk::PipelineDynamicStateCreateInfo       dynamicState       = detail::makeDynamicState();
   vk::PipelineColorBlendStateCreateInfo    colorBlendState    = detail::makeColorBlendState();
   vk::PipelineVertexInputStateCreateInfo   vertexInputState   = detail::makeVertexInputState();
+  vk::PipelineTessellationStateCreateInfo tessellationState = vk::PipelineTessellationStateCreateInfo().setPatchControlPoints(0);
 
   std::vector<vk::DynamicState> dynamicStates = {vk::DynamicState::eScissor, vk::DynamicState::eViewport};
   std::vector<vk::Format>       attachmentFormats;

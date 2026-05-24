@@ -29,6 +29,8 @@ add_library(ptvc-engine
     scene/ICamera.hpp
     scene/GameObject.hpp
     scene/Scene.cpp
+    scene/Terrain.hpp
+    scene/Terrain.cpp
     render/DebugLayer.hpp
     render/DebugLayer.cpp
     scene/FreeCamera.hpp
