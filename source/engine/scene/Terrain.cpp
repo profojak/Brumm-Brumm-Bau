@@ -3,6 +3,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <stb_image.h>
 
+#include <render/DebugLayer.hpp>
 #include <scene/Vertex.hpp>
 #include <render/GraphicsPipeline.hpp>
 
@@ -33,11 +34,14 @@ void Terrain::updateTessellationData(const CameraData& cameraData, const float t
   mTessellationUBO->setData(&mTessellationData, sizeof(TerrainTessellationData), 0);
 }
 
-void Terrain::onRender(const rhi::Frame& frame) const noexcept
+void Terrain::onRender(const rhi::Frame& frame, const DebugRenderMode debugRenderMode = DebugRenderMode::eGame) const noexcept
 {
   const vk::DeviceSize offsets[1] = {0};
 
+  const int32_t modeValue = std::to_underlying(debugRenderMode);
+
   mPipeline->bind(frame, frame.commandBuffer);
+  mPipeline->pushConstant(&modeValue, frame.commandBuffer);
 
   frame.commandBuffer.bindVertexBuffers(0, 1, &mVertexBuffer->getHandle(), offsets);
   frame.commandBuffer.bindIndexBuffer(mIndexBuffer->getHandle(), 0, vk::IndexType::eUint32);
@@ -293,6 +297,7 @@ void Terrain::createPipeline() noexcept
   mPipeline = rhi::GraphicsPipelineBuilder()
                   .addDescriptor(0, mSceneDescriptor)
                   .addDescriptor(1, mDescriptor)
+                  .addPushConstantRange({eFragment, 0, sizeof(int32_t)})
                   .addVertexType<Vertex>()
                   .addShader({"assets/shaders/terrain.vert.glsl", eVertex})
                   .addShader({"assets/shaders/terrain.tesc.glsl", eTessellationControl})

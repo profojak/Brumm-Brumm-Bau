@@ -23,6 +23,17 @@ layout(set = 1, binding = 0) uniform TerrainTessellationData {
 
 layout(set = 1, binding = 1) uniform sampler2D heightMap;
 
+layout(push_constant) uniform TerrainPushConstant {
+    int debugRenderMode;
+} pc;
+
+// DebugRenderMode Enum
+#define RENDER_MODE_OBJ_INDEX  0
+#define RENDER_MODE_VIS_NORMAL 1
+#define RENDER_MODE_VIS_UV     2
+#define RENDER_MODE_WIREFRAME  3
+#define RENDER_MODE_GAME       4
+
 vec3 colorLOD(float lod)
 {
     float t = log2(lod) / 6.0;
@@ -31,6 +42,26 @@ vec3 colorLOD(float lod)
 
 void main()
 {
-    vec3 color = colorLOD(inLOD);
+    vec3 color;
+    if (pc.debugRenderMode == RENDER_MODE_OBJ_INDEX)
+    {
+        color = colorLOD(inLOD);
+    }
+    else if (pc.debugRenderMode == RENDER_MODE_VIS_NORMAL)
+    {
+        color = normalize(inNormal) * 0.5 + 0.5;
+    }
+    else if (pc.debugRenderMode == RENDER_MODE_VIS_UV)
+    {
+        color = vec3(inUV, 0.0);
+    }
+    else if (pc.debugRenderMode == RENDER_MODE_WIREFRAME)
+    {
+        color = vec3(1.0);
+    }
+    else if (pc.debugRenderMode == RENDER_MODE_GAME)
+    {
+        color = colorLOD(inLOD);
+    }
     outColor = vec4(color, 1.0);
 }

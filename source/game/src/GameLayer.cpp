@@ -1,6 +1,7 @@
 #include "GameLayer.hpp"
 
 #include <core/Application.hpp>
+#include <render/DebugLayer.hpp>
 #include <vulkan/render/GraphicsPipeline.hpp>
 
 GameLayer::GameLayer()
@@ -12,6 +13,7 @@ GameLayer::GameLayer()
   createDepthBuffer();
 
   mTerrain = makeUnique<ptvc::Terrain>(mVulkanContext, mScene->getDescriptor());
+  mScene->setTerrain(mTerrain.get());
 }
 
 GameLayer::~GameLayer() {}
@@ -77,7 +79,7 @@ void GameLayer::onRender(const ptvc::rhi::Frame& frame) noexcept
   frame.commandBuffer.beginRendering(renderingInfo);
 
   // Render the tessellated terrain
-  mTerrain->onRender(frame);
+  mTerrain->onRender(frame, ptvc::DebugRenderMode::eNone);
 
   frame.commandBuffer.endRendering();
 

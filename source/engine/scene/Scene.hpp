@@ -12,6 +12,9 @@
 #include "vulkan/VulkanCore.hpp"
 
 namespace ptvc {
+
+class Terrain;
+
 enum SceneDescriptorBindings : uint32_t
 {
   SceneDescriptorBindings_CameraUniform    = 0,
@@ -89,6 +92,16 @@ public:
    */
   [[nodiscard]] ICamera& getCamera() noexcept;
 
+  /**
+   * Set the terrain for this scene (optional).
+   */
+  void setTerrain(Terrain* terrain) noexcept { mTerrain = terrain; }
+
+  /**
+   * @return Terrain pointer, or nullptr if not set.
+   */
+  [[nodiscard]] Terrain* getTerrain() const noexcept { return mTerrain; }
+
 private:
   // Create the Scene Descriptor and related resources (e.g. uniform buffers).
   void createSceneDescriptor() noexcept;
@@ -112,5 +125,7 @@ private:
 
   // Camera uniform buffers (count = no. descriptor sets)
   std::vector<SPtr<rhi::Buffer>> mCameraUniformBuffers;
+
+  Terrain* mTerrain = nullptr;
 };
 }  // namespace ptvc

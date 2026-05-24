@@ -1,6 +1,7 @@
 #include "DebugLayer.hpp"
 
 #include <imgui.h>
+#include <scene/Terrain.hpp>
 
 namespace ptvc {
 namespace detail {
@@ -15,6 +16,10 @@ namespace detail {
       return "Normal";
     case eUV:
       return "UV";
+    case eWireframe:
+      return "Wireframe";
+    case eGame:
+      return "Game";
   }
   return "Unknown";
 }
@@ -118,6 +123,11 @@ void DebugLayer::onRender(const rhi::Frame& frame) noexcept
 
     obj->getGeometry()->draw(frame.commandBuffer);
   }
+
+  // Render terrain with debug mode pushed to its shader
+  if(const auto* terrain = mScene->getTerrain())
+    terrain->onRender(frame, mConfig.mode);
+
   frame.commandBuffer.endRendering();
 
   if(mIsFirstRender)

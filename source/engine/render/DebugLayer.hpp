@@ -10,9 +10,11 @@
 namespace ptvc {
 enum class DebugRenderMode : int32_t
 {
-  eNone   = 0,  // Flat shaded render with a per-object constant color
-  eNormal = 1,  // Visualize vertex normals
-  eUV     = 2,  // Visualize vertex UVs
+  eNone      = 0,  // Flat shaded render with a per-object constant color
+  eNormal    = 1,  // Visualize vertex normals
+  eUV        = 2,  // Visualize vertex UVs
+  eWireframe = 3,  // Wireframe render
+  eGame      = 4,  // Game render
 };
 
 // Behaviour and rendering options

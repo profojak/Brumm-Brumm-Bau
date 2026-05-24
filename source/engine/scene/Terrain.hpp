@@ -11,6 +11,8 @@
 
 namespace ptvc {
 
+enum class DebugRenderMode : int32_t;
+
 struct TerrainTessellationData
 {
   float tessellationFactor = 32.0f;
@@ -23,7 +25,7 @@ public:
 
   ~Terrain();
 
-  void onRender(const rhi::Frame& frame) const noexcept;
+  void onRender(const rhi::Frame& frame, DebugRenderMode debugRenderMode) const noexcept;
 
   /**
    * Update tessellation uniform buffer with current camera data

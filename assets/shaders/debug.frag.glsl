@@ -1,21 +1,23 @@
 #version 460
 
-layout (location = 0) in vec3 inNormal;
-layout (location = 1) in vec2 inUV;
+layout(location = 0) in vec3 inNormal;
+layout(location = 1) in vec2 inUV;
 
-layout (location = 0) out vec4 outColor;
+layout(location = 0) out vec4 outColor;
 
-layout (push_constant) uniform PushConstant {
+layout(push_constant) uniform PushConstant {
     mat4 inModel;
     vec4 debugColor;
-    int  renderMode;
-    int  objIndex;
+    int renderMode;
+    int objIndex;
 };
 
-// RenderMode Enum
+// DebugRenderMode Enum
 #define RENDER_MODE_OBJ_INDEX  0
 #define RENDER_MODE_VIS_NORMAL 1
 #define RENDER_MODE_VIS_UV     2
+#define RENDER_MODE_WIREFRAME  3
+#define RENDER_MODE_GAME       4
 
 void main()
 {
