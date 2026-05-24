@@ -56,6 +56,8 @@ public:
 
   [[nodiscard]] bool isEnabled() const noexcept;
 
+  [[nodiscard]] float getTessellationFactor() const noexcept { return mTessellationFactor; }
+
 private:
   void createDebugPipeline() noexcept;
   void createWireframePipeline() noexcept;
@@ -68,8 +70,10 @@ private:
   std::mt19937              mEngine;
   std::array<glm::vec4, 16> mObjectColors = {};
 
-  bool              mEnabled = false;
-  DebugRenderConfig mConfig  = {};
+  bool              mEnabled      = false;
+  bool              mShowOptions  = false;
+  float             mTessellationFactor = 0.3f;
+  DebugRenderConfig mConfig       = {};
 
   Scene*                   mScene;
   SPtr<rhi::VulkanContext> mVulkanContext;

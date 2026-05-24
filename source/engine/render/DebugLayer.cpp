@@ -54,6 +54,11 @@ void DebugLayer::onEvent(const SDL_Event& event) noexcept
       mEnabled = !mEnabled;
       spdlog::debug("Toggled debug renderer: {}", STYLE_BOOL(mEnabled, "ON", "OFF"));
     }
+    if(keyboardEvent.scancode == SDL_SCANCODE_O)
+    {
+      mShowOptions = !mShowOptions;
+      spdlog::debug("Toggled options window: {}", STYLE_BOOL(mShowOptions, "ON", "OFF"));
+    }
   }
 }
 
@@ -127,8 +132,12 @@ void DebugLayer::onRender(const rhi::Frame& frame) noexcept
   }
 
   // Render terrain with debug mode pushed to its shader
-  if(const auto* terrain = mScene->getTerrain())
+  if(auto* terrain = mScene->getTerrain())
+  {
+    const auto cameraData = mScene->getCamera().getCameraData();
+    terrain->updateTessellationData(cameraData, mTessellationFactor);
     terrain->onRender(frame, mConfig.mode);
+  }
 
   frame.commandBuffer.endRendering();
 
@@ -140,6 +149,20 @@ void DebugLayer::onRender(const rhi::Frame& frame) noexcept
 
 void DebugLayer::onDrawUI() noexcept
 {
+  if(mShowOptions)
+  {
+    ImGui::Begin("Options");
+
+    ImGui::Text("Hint: Toggle with [O]");
+    ImGui::SeparatorText("Terrain");
+
+    ImGui::Text("Tessellation factor:");
+    ImGui::SetNextItemWidth(-1.0f);
+    ImGui::SliderFloat("##tessellationFactor", &mTessellationFactor, 0.01f, 2.0f, "%.2f");
+
+    ImGui::End();
+  }
+
   if(!mConfig.enableUI || !mEnabled)
   {
     return;

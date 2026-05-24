@@ -28,8 +28,10 @@ void GameLayer::onUpdate(const float deltaTime) noexcept {}
 
 void GameLayer::onRender(const ptvc::rhi::Frame& frame) noexcept
 {
-  const auto cameraData = mScene->getCamera().getCameraData();
-  mTerrain->updateTessellationData(cameraData, 0.3f);
+  const auto  cameraData         = mScene->getCamera().getCameraData();
+  const auto* debugLayer         = ptvc::Application::getApplication()->getLayer<ptvc::DebugLayer>();
+  const float tessellationFactor = debugLayer ? debugLayer->getTessellationFactor() : 0.3f;
+  mTerrain->updateTessellationData(cameraData, tessellationFactor);
 
   // Transition swapchain image
   const auto colorBarrier = mVulkanContext->getSwapchain()->getBarrier(
