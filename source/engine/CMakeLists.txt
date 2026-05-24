@@ -37,8 +37,8 @@ add_library(ptvc-engine
     core/IO.cpp
     core/ApplicationOptions.hpp
     scene/Lights.hpp
-    system/Physics.hpp
-    system/Physics.cpp
+    physics/Physics.hpp
+    physics/Physics.cpp
 )
 
 target_link_libraries(ptvc-engine
