@@ -142,7 +142,7 @@ void FreeCamera::onUpdate(const float deltaTime) noexcept
   const glm::vec3 right   = glm::vec3(glm::cos(mYaw), 0.0f, glm::sin(mYaw));
   const glm::vec3 up      = glm::vec3(0.0f, 1.0f, 0.0f);
 
-  const float speed = 5.0f * deltaTime;
+  const float speed = 15.0f * deltaTime;
   glm::vec3   movement(0.0f);
 
   if(mKeyW)
