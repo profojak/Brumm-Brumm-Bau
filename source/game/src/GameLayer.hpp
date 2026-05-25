@@ -11,6 +11,8 @@ namespace ptvc {
 class Physics;
 }
 
+class Vehicle;
+
 class GameLayer : public ptvc::ILayer
 {
 public:
@@ -40,4 +42,5 @@ private:
   // Physics
   SPtr<ptvc::Physics>        mPhysics;
   SPtr<ptvc::TerrainPhysics> mTerrainPhysics;
+  Vehicle* mVehicle = nullptr;
 };

@@ -35,6 +35,8 @@ add_library(ptvc-engine
     render/DebugLayer.cpp
     scene/FreeCamera.hpp
     scene/FreeCamera.cpp
+    scene/OrbitCamera.hpp
+    scene/OrbitCamera.cpp
     core/IO.hpp
     core/IO.cpp
     core/ApplicationOptions.hpp

@@ -1,7 +1,7 @@
 #include <spdlog/spdlog.h>
 
 #include <core/Application.hpp>
-#include <scene/FreeCamera.hpp>
+#include <scene/OrbitCamera.hpp>
 #include "GameLayer.hpp"
 
 int main()
@@ -32,8 +32,8 @@ int main()
   // Set scene, register layers
   app->setScene<ptvc::Scene>();
 
-  // Initialize a free-fly camera for viewing the terrain
-  app->getScene()->initCamera<ptvc::FreeCamera>(1280.0f / 720.0f);
+  // Initialize an orbit camera that will follow the vehicle
+  app->getScene()->initCamera<ptvc::OrbitCamera>(1280.0f / 720.0f);
 
   app->registerLayer<GameLayer>();
 

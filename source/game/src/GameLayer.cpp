@@ -5,6 +5,7 @@
 #include <render/DebugLayer.hpp>
 #include <physics/Physics.hpp>
 #include <physics/TerrainPhysics.hpp>
+#include <scene/OrbitCamera.hpp>
 
 GameLayer::GameLayer()
 {
@@ -25,7 +26,11 @@ GameLayer::GameLayer()
       .name             = "Vehicle",
       .initialTransform = {},
   };
-  mScene->addGameObject<Vehicle>(vehicleParams, mPhysics, mVulkanContext, mScene->getDescriptor());
+  mVehicle = mScene->addGameObject<Vehicle>(vehicleParams, mPhysics, mVulkanContext, mScene->getDescriptor());
+
+  // Let the orbit camera follow the vehicle
+  if(auto* orbitCam = dynamic_cast<ptvc::OrbitCamera*>(&mScene->getCamera()))
+    orbitCam->setTargetCallback([this]() { return mVehicle->getPosition(); });
 }
 
 GameLayer::~GameLayer() = default;
