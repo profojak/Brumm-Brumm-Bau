@@ -113,4 +113,15 @@ void OrbitCamera::recomputeViewMatrix() noexcept
   mViewMatrix  = glm::lookAt(mEyePosition, target, glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
+void OrbitCamera::setDistance(const float distance) noexcept
+{
+  mDistance = glm::clamp(distance, 3.0f, 100.0f);
+  recomputeViewMatrix();
+}
+
+float OrbitCamera::getDistance() const noexcept
+{
+  return mDistance;
+}
+
 }  // namespace ptvc

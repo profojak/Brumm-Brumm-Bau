@@ -2,6 +2,7 @@
 
 #include <imgui.h>
 #include <scene/Terrain.hpp>
+#include <scene/OrbitCamera.hpp>
 
 namespace ptvc {
 namespace detail {
@@ -159,6 +160,18 @@ void DebugLayer::onDrawUI() noexcept
     ImGui::Text("Tessellation factor:");
     ImGui::SetNextItemWidth(-1.0f);
     ImGui::SliderFloat("##tessellationFactor", &mTessellationFactor, 0.01f, 2.0f, "%.2f");
+
+    ImGui::SeparatorText("Camera");
+
+    ImGui::Text("Orbit camera distance:");
+    ImGui::SetNextItemWidth(-1.0f);
+    if(ImGui::SliderFloat("##orbitCameraDistance", &mOrbitCameraDistance, 3.0f, 100.0f, "%.1f"))
+    {
+      if(auto* orbitCamera = dynamic_cast<OrbitCamera*>(&mScene->getCamera()))
+      {
+        orbitCamera->setDistance(mOrbitCameraDistance);
+      }
+    }
 
     ImGui::End();
   }

@@ -50,6 +50,9 @@ public:
   void onEvent(const SDL_Event& event) noexcept override;
   void onUpdate(float deltaTime) noexcept override;
 
+  void                setDistance(float distance) noexcept;
+  [[nodiscard]] float getDistance() const noexcept;
+
 private:
   void recomputeViewMatrix() noexcept;
 
