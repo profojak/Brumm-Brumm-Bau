@@ -41,9 +41,14 @@ public:
   [[nodiscard]] const SPtr<rhi::Image>& getHeightmapImage() const noexcept { return mHeightmapImage; }
   [[nodiscard]] vk::Sampler             getHeightmapSampler() const noexcept { return mHeightmapSampler; }
 
+  [[nodiscard]] const SPtr<rhi::Image>& getTerrainTextureFront() const noexcept { return mTerrainTextureFront; }
+  [[nodiscard]] const SPtr<rhi::Image>& getTerrainTextureSide() const noexcept { return mTerrainTextureSide; }
+  [[nodiscard]] const SPtr<rhi::Image>& getTerrainTextureUp() const noexcept { return mTerrainTextureUp; }
+
 private:
   void generateBaseMesh() noexcept;
   void loadHeightmap() noexcept;
+  void loadTerrainTextures() noexcept;
   void createTerrainDescriptor() noexcept;
   void createPipeline() noexcept;
   void createWireframePipeline() noexcept;
@@ -59,6 +64,12 @@ private:
   // Heightmap texture
   SPtr<rhi::Image> mHeightmapImage;
   vk::Sampler      mHeightmapSampler = nullptr;
+
+  // Triplanar terrain textures
+  SPtr<rhi::Image> mTerrainTextureFront;
+  SPtr<rhi::Image> mTerrainTextureSide;
+  SPtr<rhi::Image> mTerrainTextureUp;
+  vk::Sampler      mTerrainTextureSampler = nullptr;
 
   // Tessellation UBO
   TerrainTessellationData mTessellationData = {};

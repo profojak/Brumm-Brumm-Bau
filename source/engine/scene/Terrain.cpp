@@ -10,13 +10,16 @@
 
 namespace ptvc {
 
-Terrain::Terrain(const SPtr<rhi::VulkanContext>& vulkanContext, const SPtr<rhi::Descriptor>& sceneDescriptor, const SPtr<TerrainPhysics>& terrainPhysics)
+Terrain::Terrain(const SPtr<rhi::VulkanContext>& vulkanContext,
+                 const SPtr<rhi::Descriptor>&    sceneDescriptor,
+                 const SPtr<TerrainPhysics>&     terrainPhysics)
     : mVulkanContext(vulkanContext)
     , mSceneDescriptor(sceneDescriptor)
     , mTerrainPhysics(terrainPhysics)
 {
   generateBaseMesh();
   loadHeightmap();
+  loadTerrainTextures();
   createTerrainDescriptor();
   createPipeline();
   createWireframePipeline();
@@ -27,6 +30,10 @@ Terrain::~Terrain()
   if(mHeightmapSampler)
   {
     mVulkanContext->getDevice()->getHandle().destroySampler(mHeightmapSampler);
+  }
+  if(mTerrainTextureSampler)
+  {
+    mVulkanContext->getDevice()->getHandle().destroySampler(mTerrainTextureSampler);
   }
 }
 
@@ -237,6 +244,108 @@ void Terrain::loadHeightmap() noexcept
   mHeightmapSampler = mVulkanContext->getDevice()->getHandle().createSampler(samplerInfo);
 }
 
+void Terrain::loadTerrainTextures() noexcept
+{
+  struct TerrainTextureInfo
+  {
+    const char*       path;
+    SPtr<rhi::Image>* target;
+  };
+
+  const TerrainTextureInfo textures[] = {
+      {"assets/textures/terrain_front.png", &mTerrainTextureFront},
+      {"assets/textures/terrain_side.png", &mTerrainTextureSide},
+      {"assets/textures/terrain_up.png", &mTerrainTextureUp},
+  };
+
+  for(const auto& tex : textures)
+  {
+    int            width, height, channels;
+    const stbi_uc* pixels = stbi_load(tex.path, &width, &height, &channels, STBI_rgb_alpha);
+
+    if(!pixels)
+    {
+      exitWithError("Failed to load terrain texture: {}", tex.path);
+    }
+
+    const auto imageSize = static_cast<vk::DeviceSize>(width) * static_cast<vk::DeviceSize>(height) * 4;  // RGBA = 4 bytes
+
+    // Create staging buffer
+    const auto stagingResult = rhi::Buffer::create({
+        .size        = imageSize,
+        .hostVisible = true,
+        .device      = mVulkanContext->getDevice(),
+    });
+    exitOnError(stagingResult);
+    auto staging = std::move(stagingResult.value());
+
+    staging->setData(pixels, imageSize, 0);
+    stbi_image_free((void*)pixels);
+
+    // Create the texture image
+    const auto imageResult = rhi::Image::create({
+        .extent     = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)},
+        .usageFlags = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst,
+        .format     = vk::Format::eR8G8B8A8Srgb,
+        .mipmapping = true,
+        .label      = tex.path,
+        .device     = mVulkanContext->getDevice(),
+    });
+    exitOnError(imageResult);
+    *tex.target = std::move(imageResult.value());
+
+    // Copy from staging buffer to device and generate mipmaps
+    mVulkanContext->executeImmediateCommand([&](const vk::CommandBuffer& cb) {
+      const auto barrier_toDst = vk::ImageMemoryBarrier2()
+                                     .setImage((*tex.target)->getHandle())
+                                     .setSubresourceRange({vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1})
+                                     .setOldLayout(vk::ImageLayout::eUndefined)
+                                     .setSrcAccessMask(vk::AccessFlagBits2::eNone)
+                                     .setSrcStageMask(vk::PipelineStageFlagBits2::eNone)
+                                     .setNewLayout(vk::ImageLayout::eTransferDstOptimal)
+                                     .setDstAccessMask(vk::AccessFlagBits2::eTransferWrite)
+                                     .setDstStageMask(vk::PipelineStageFlagBits2::eTransfer);
+
+      cb.pipelineBarrier2(vk::DependencyInfo().setImageMemoryBarriers(barrier_toDst));
+
+      const auto region = vk::BufferImageCopy2()
+                              .setBufferOffset(0)
+                              .setImageSubresource({vk::ImageAspectFlagBits::eColor, 0, 0, 1})
+                              .setImageExtent({static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1});
+
+      cb.copyBufferToImage2(vk::CopyBufferToImageInfo2()
+                                .setSrcBuffer(staging->getHandle())
+                                .setDstImage((*tex.target)->getHandle())
+                                .setDstImageLayout(vk::ImageLayout::eTransferDstOptimal)
+                                .setRegions(region));
+    });
+
+    // Generate mipmaps
+    mVulkanContext->executeImmediateCommand([&](const vk::CommandBuffer& cb) {
+      (*tex.target)
+          ->generateMipmaps(cb,
+                            std::make_optional<rhi::ImageState>({vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite,
+                                                                 vk::PipelineStageFlagBits2::eTransfer}),
+                            std::make_optional<rhi::ImageState>({vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eShaderRead,
+                                                                 vk::PipelineStageFlagBits2::eFragmentShader}));
+    });
+  }
+
+  // Create a single sampler for all terrain textures
+  auto samplerInfo = vk::SamplerCreateInfo()
+                         .setMagFilter(vk::Filter::eLinear)
+                         .setMinFilter(vk::Filter::eLinear)
+                         .setMipmapMode(vk::SamplerMipmapMode::eLinear)
+                         .setAddressModeU(vk::SamplerAddressMode::eRepeat)
+                         .setAddressModeV(vk::SamplerAddressMode::eRepeat)
+                         .setAddressModeW(vk::SamplerAddressMode::eRepeat)
+                         .setMinLod(0.0f)
+                         .setMaxLod(static_cast<float>(mTerrainTextureFront->getProperties().levelCount))
+                         .setBorderColor(vk::BorderColor::eFloatOpaqueWhite);
+
+  mTerrainTextureSampler = mVulkanContext->getDevice()->getHandle().createSampler(samplerInfo);
+}
+
 void Terrain::createTerrainDescriptor() noexcept
 {
   // Create tessellation uniform buffer
@@ -262,6 +371,12 @@ void Terrain::createTerrainDescriptor() noexcept
               {0, vk::DescriptorType::eUniformBuffer, 1, tesc_tese_frag},
               // Binding 1: Heightmap sampler
               {1, vk::DescriptorType::eCombinedImageSampler, 1, tesc_tese_frag},
+              // Binding 2: Terrain front/back texture (Z-axis)
+              {2, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment},
+              // Binding 3: Terrain side texture (X-axis)
+              {3, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment},
+              // Binding 4: Terrain up texture (Y-axis)
+              {4, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment},
           },
       .setCount = mVulkanContext->getSwapchain()->getImageCount(),
       .label    = "TerrainDescriptor",
@@ -276,8 +391,23 @@ void Terrain::createTerrainDescriptor() noexcept
     const auto uboInfo =
         vk::DescriptorBufferInfo().setBuffer(mTessellationUBO->getHandle()).setOffset(0).setRange(sizeof(TerrainTessellationData));
 
-    const auto imageInfo =
+    const auto heightmapInfo =
         vk::DescriptorImageInfo().setSampler(mHeightmapSampler).setImageView(mHeightmapImage->getImageView()).setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+
+    const auto terrainFrontInfo = vk::DescriptorImageInfo()
+                                      .setSampler(mTerrainTextureSampler)
+                                      .setImageView(mTerrainTextureFront->getImageView())
+                                      .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+
+    const auto terrainSideInfo = vk::DescriptorImageInfo()
+                                     .setSampler(mTerrainTextureSampler)
+                                     .setImageView(mTerrainTextureSide->getImageView())
+                                     .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+
+    const auto terrainUpInfo = vk::DescriptorImageInfo()
+                                   .setSampler(mTerrainTextureSampler)
+                                   .setImageView(mTerrainTextureUp->getImageView())
+                                   .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 
     const auto write0 = vk::WriteDescriptorSet()
                             .setBufferInfo(uboInfo)
@@ -287,13 +417,34 @@ void Terrain::createTerrainDescriptor() noexcept
                             .setDstSet(mDescriptor->getSet(i));
 
     const auto write1 = vk::WriteDescriptorSet()
-                            .setImageInfo(imageInfo)
+                            .setImageInfo(heightmapInfo)
                             .setDstBinding(1)
                             .setDescriptorCount(1)
                             .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
                             .setDstSet(mDescriptor->getSet(i));
 
-    std::array writes = {write0, write1};
+    const auto write2 = vk::WriteDescriptorSet()
+                            .setImageInfo(terrainFrontInfo)
+                            .setDstBinding(2)
+                            .setDescriptorCount(1)
+                            .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+                            .setDstSet(mDescriptor->getSet(i));
+
+    const auto write3 = vk::WriteDescriptorSet()
+                            .setImageInfo(terrainSideInfo)
+                            .setDstBinding(3)
+                            .setDescriptorCount(1)
+                            .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+                            .setDstSet(mDescriptor->getSet(i));
+
+    const auto write4 = vk::WriteDescriptorSet()
+                            .setImageInfo(terrainUpInfo)
+                            .setDstBinding(4)
+                            .setDescriptorCount(1)
+                            .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+                            .setDstSet(mDescriptor->getSet(i));
+
+    std::array writes = {write0, write1, write2, write3, write4};
     mVulkanContext->getDevice()->getHandle().updateDescriptorSets(writes, {});
   }
 }

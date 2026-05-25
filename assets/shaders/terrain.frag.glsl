@@ -23,6 +23,11 @@ layout(set = 1, binding = 0) uniform TerrainTessellationData {
 
 layout(set = 1, binding = 1) uniform sampler2D heightMap;
 
+// Triplanar terrain textures
+layout(set = 1, binding = 2) uniform sampler2D terrainFront; // Z-axis: front/back
+layout(set = 1, binding = 3) uniform sampler2D terrainSide; // X-axis: left/right
+layout(set = 1, binding = 4) uniform sampler2D terrainUp; // Y-axis: up/down
+
 layout(push_constant) uniform TerrainPushConstant {
     int debugRenderMode;
 } pc;
@@ -33,6 +38,9 @@ layout(push_constant) uniform TerrainPushConstant {
 #define RENDER_MODE_VIS_UV     2
 #define RENDER_MODE_WIREFRAME  3
 #define RENDER_MODE_GAME       4
+
+const float TEX_SCALE = 0.05;
+const float BLEND_SHARPNESS = 8.0;
 
 vec3 colorLOD(float lod)
 {
@@ -61,7 +69,24 @@ void main()
     }
     else if (pc.debugRenderMode == RENDER_MODE_GAME)
     {
-        color = colorLOD(inLOD);
+        vec3 N = normalize(inNormal);
+
+        // Project world-space position onto the three planes
+        vec2 uvX = inWorldPosition.zy * TEX_SCALE;
+        vec2 uvY = inWorldPosition.xz * TEX_SCALE;
+        vec2 uvZ = inWorldPosition.xy * TEX_SCALE;
+
+        vec3 colX = texture(terrainSide, uvX).rgb;
+        vec3 colY = texture(terrainUp, uvY).rgb;
+        vec3 colZ = texture(terrainFront, uvZ).rgb;
+
+        // Blend weights from normal
+        vec3 blend = abs(N);
+        blend = pow(blend, vec3(BLEND_SHARPNESS));
+        blend /= (blend.x + blend.y + blend.z);
+
+        // Blend the three axis-aligned samples
+        color = colX * blend.x + colY * blend.y + colZ * blend.z;
     }
     outColor = vec4(color, 1.0);
 }

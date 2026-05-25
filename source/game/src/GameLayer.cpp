@@ -103,7 +103,7 @@ void GameLayer::onRender(const ptvc::rhi::Frame& frame) noexcept
   frame.commandBuffer.beginRendering(renderingInfo);
 
   // Render the tessellated terrain
-  mTerrain->onRender(frame, ptvc::DebugRenderMode::eNone);
+  mTerrain->onRender(frame, ptvc::DebugRenderMode::eGame);
 
   // Render all game objects
   for(const auto& object : mScene->getGameObjects())
