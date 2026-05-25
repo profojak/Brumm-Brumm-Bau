@@ -55,8 +55,8 @@ void Terrain::onRender(const rhi::Frame& frame, const DebugRenderMode debugRende
 void Terrain::generateBaseMesh() noexcept
 {
   const uint32_t patchSize = 32;
-  const float    wx        = 2.0f;
-  const float    wy        = 2.0f;
+  const float    wx        = 10.0f;
+  const float    wy        = 10.0f;
   const float    uvScale   = 1.0f;
 
   const uint32_t      vertexCount = patchSize * patchSize;

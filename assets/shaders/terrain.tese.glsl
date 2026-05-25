@@ -28,8 +28,8 @@ layout(set = 1, binding = 0) uniform TerrainTessellationData {
 layout(set = 1, binding = 1) uniform sampler2D heightMap;
 
 // Terrain parameters
-const float HEIGHT_SCALE = 12.0;
-const float TERRAIN_WORLD_SIZE = 62.0;
+const float HEIGHT_SCALE = 60.0;
+const float TERRAIN_WORLD_SIZE = 310.0;
 
 // Sample height from heightmap at given UV
 float sampleHeight(vec2 uv)

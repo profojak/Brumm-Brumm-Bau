@@ -12,8 +12,8 @@ namespace ptvc {
 
 // Match the tessellation shader constants
 namespace {
-constexpr float HEIGHT_SCALE       = 12.0f;
-constexpr float TERRAIN_WORLD_SIZE = 62.0f;
+constexpr float HEIGHT_SCALE       = 60.0f;
+constexpr float TERRAIN_WORLD_SIZE = 310.0f;
 }  // namespace
 
 TerrainPhysics::TerrainPhysics(Physics& physics)
