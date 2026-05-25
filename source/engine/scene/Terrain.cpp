@@ -3,15 +3,17 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <stb_image.h>
 
+#include <physics/TerrainPhysics.hpp>
 #include <render/DebugLayer.hpp>
 #include <scene/Vertex.hpp>
 #include <render/GraphicsPipeline.hpp>
 
 namespace ptvc {
 
-Terrain::Terrain(const SPtr<rhi::VulkanContext>& vulkanContext, const SPtr<rhi::Descriptor>& sceneDescriptor)
+Terrain::Terrain(const SPtr<rhi::VulkanContext>& vulkanContext, const SPtr<rhi::Descriptor>& sceneDescriptor, const SPtr<TerrainPhysics>& terrainPhysics)
     : mVulkanContext(vulkanContext)
     , mSceneDescriptor(sceneDescriptor)
+    , mTerrainPhysics(terrainPhysics)
 {
   generateBaseMesh();
   loadHeightmap();
@@ -152,6 +154,9 @@ void Terrain::loadHeightmap() noexcept
   }
 
   spdlog::info("Heightmap loaded from disk: {}x{} ({} channels)", width, height, channels);
+
+  if(mTerrainPhysics)
+    mTerrainPhysics->createBody(pixels, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 
   const auto imageSize = static_cast<vk::DeviceSize>(width) * static_cast<vk::DeviceSize>(height) * sizeof(uint16_t);
 

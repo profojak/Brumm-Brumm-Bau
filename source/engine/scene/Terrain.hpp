@@ -11,6 +11,8 @@
 
 namespace ptvc {
 
+class TerrainPhysics;
+
 enum class DebugRenderMode : int32_t;
 
 struct TerrainTessellationData
@@ -21,7 +23,9 @@ struct TerrainTessellationData
 class Terrain
 {
 public:
-  Terrain(const SPtr<rhi::VulkanContext>& vulkanContext, const SPtr<rhi::Descriptor>& sceneDescriptor);
+  Terrain(const SPtr<rhi::VulkanContext>& vulkanContext,
+          const SPtr<rhi::Descriptor>&    sceneDescriptor,
+          const SPtr<TerrainPhysics>&     terrainPhysics = nullptr);
 
   ~Terrain();
 
@@ -64,8 +68,9 @@ private:
   SPtr<rhi::Descriptor> mDescriptor;
 
   // Pipelines
-  SPtr<rhi::Pipeline> mPipeline;
-  SPtr<rhi::Pipeline> mWireframePipeline;
+  SPtr<rhi::Pipeline>  mPipeline;
+  SPtr<rhi::Pipeline>  mWireframePipeline;
+  SPtr<TerrainPhysics> mTerrainPhysics = nullptr;
 };
 
 }  // namespace ptvc

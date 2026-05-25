@@ -11,6 +11,8 @@
 
 using namespace JPH;
 
+namespace ptvc {
+
 namespace {
 BroadPhaseLayer constexpr STATIC_BPL(0);
 BroadPhaseLayer constexpr DYNAMIC_BPL(1);
@@ -156,3 +158,15 @@ void Physics::update(float deltaTime)
 {
   mImpl->physicsSystem.Update(deltaTime, 1, &mImpl->tempAllocator, &mImpl->jobSystem);
 }
+
+JPH::BodyInterface& Physics::getBodyInterface() noexcept
+{
+  return mImpl->physicsSystem.GetBodyInterface();
+}
+
+JPH::PhysicsSystem& Physics::getPhysicsSystem() noexcept
+{
+  return mImpl->physicsSystem;
+}
+
+}  // namespace ptvc

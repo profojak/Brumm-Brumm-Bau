@@ -41,6 +41,8 @@ add_library(ptvc-engine
     scene/Lights.hpp
     physics/Physics.hpp
     physics/Physics.cpp
+    physics/TerrainPhysics.hpp
+    physics/TerrainPhysics.cpp
 )
 
 target_link_libraries(ptvc-engine
