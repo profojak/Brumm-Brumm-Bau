@@ -178,6 +178,21 @@ void DebugLayer::onDrawUI() noexcept
     if(ImGui::Button("Toggle camera"))
       toggleCamera();
 
+    ImGui::SeparatorText("Sun light");
+
+    static float sunAzimuth   = mScene->getSunAzimuth();
+    static float sunElevation = mScene->getSunElevation();
+
+    ImGui::Text("Azimuth:");
+    ImGui::SetNextItemWidth(-1.0f);
+    if(ImGui::SliderFloat("##sunAzimuth", &sunAzimuth, 0.0f, 360.0f, "%.1f°"))
+      mScene->setSunDirection(sunAzimuth, sunElevation);
+
+    ImGui::Text("Elevation:");
+    ImGui::SetNextItemWidth(-1.0f);
+    if(ImGui::SliderFloat("##sunElevation", &sunElevation, 0.0f, 90.0f, "%.1f°"))
+      mScene->setSunDirection(sunAzimuth, sunElevation);
+
     ImGui::End();
   }
 

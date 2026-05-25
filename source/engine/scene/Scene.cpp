@@ -1,5 +1,7 @@
 #include "Scene.hpp"
 
+#include <glm/trigonometric.hpp>
+
 #include <scene/Lights.hpp>
 #include <scene/ShadowMap.hpp>
 
@@ -40,12 +42,13 @@ void Scene::onUpdate(const float deltaTime, const rhi::Frame& frame) noexcept
 
     mCameraUniformBuffers[frame.currentFrameIndex]->setData(&data, sizeof(CameraData), 0);
 
-    // Update shadow map light-space matrix
-    constexpr auto sunLight = DirectionalLight{
+    // Update shadow map light-space matrix and directional light UBO
+    const auto sunLight = DirectionalLight{
         .color     = glm::vec4(0.95f, 0.9f, 0.8f, 0.0f),
-        .direction = glm::vec4(0.6f, -0.4f, 0.4f, 0.0f),
+        .direction = directionFromAzimuthElevation(mSunAzimuth, mSunElevation),
     };
     mShadowMap->updateLightSpace(data, sunLight);
+    mDirectionalLight->setData(&sunLight, sizeof(DirectionalLight), 0);
   }
   for(const auto& object : mObjects)
   {
@@ -97,9 +100,9 @@ void Scene::createSceneDescriptor() noexcept
                                           })
                           .value();
 
-  constexpr auto dirLight = DirectionalLight{
+  const auto dirLight = DirectionalLight{
       .color     = glm::vec4(0.95f, 0.9f, 0.8f, 0.0f),
-      .direction = glm::vec4(0.6f, -0.4f, 0.4f, 0.0f),
+      .direction = directionFromAzimuthElevation(mSunAzimuth, mSunElevation),
   };
   mDirectionalLight->setData(&dirLight, sizeof(DirectionalLight), 0);
 
@@ -209,6 +212,20 @@ void Scene::writeShadowDescriptor() noexcept
     std::array writes = {write3, write4};
     mVulkanContext->getDevice()->getHandle().updateDescriptorSets(writes, {});
   }
+}
+
+void Scene::setSunDirection(const float azimuthDeg, const float elevationDeg) noexcept
+{
+  mSunAzimuth   = azimuthDeg;
+  mSunElevation = elevationDeg;
+}
+
+glm::vec4 Scene::directionFromAzimuthElevation(const float azimuthDeg, const float elevationDeg) noexcept
+{
+  const float azRad = glm::radians(azimuthDeg);
+  const float elRad = glm::radians(elevationDeg);
+  const float cosEl = glm::cos(elRad);
+  return glm::vec4(cosEl * glm::sin(azRad), -glm::sin(elRad), cosEl * glm::cos(azRad), 0.0f);
 }
 
 }  // namespace ptvc

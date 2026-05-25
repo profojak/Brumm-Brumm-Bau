@@ -3,6 +3,7 @@
 #include <type_traits>
 #include <vector>
 #include <SDL3/SDL_events.h>
+#include <glm/gtc/constants.hpp>
 
 #include "Buffer.hpp"
 #include "Descriptor.hpp"
@@ -121,10 +122,25 @@ public:
 
   void renderShadowPass(const rhi::Frame& frame) noexcept;
 
+  /**
+   * Set the sun direction from azimuth and elevation angles.
+   * @param azimuthDeg  Horizontal angle in degrees (0 = +Z, 90 = +X)
+   * @param elevationDeg Vertical angle in degrees (0 = horizon, 90 = zenith)
+   */
+  void setSunDirection(float azimuthDeg, float elevationDeg) noexcept;
+
+  [[nodiscard]] float getSunAzimuth() const noexcept { return mSunAzimuth; }
+  [[nodiscard]] float getSunElevation() const noexcept { return mSunElevation; }
+
 private:
   void createSceneDescriptor() noexcept;
 
   void writeShadowDescriptor() noexcept;
+
+  /**
+   * Convert azimuth and elevation angles (in degrees) to a normalized direction vector.
+   */
+  [[nodiscard]] static glm::vec4 directionFromAzimuthElevation(float azimuthDeg, float elevationDeg) noexcept;
 
   SPtr<rhi::VulkanContext> mVulkanContext;
 
@@ -147,6 +163,10 @@ private:
   std::vector<SPtr<rhi::Buffer>> mCameraUniformBuffers;
 
   Terrain* mTerrain = nullptr;
+
+  // Sun direction
+  float mSunAzimuth   = 56.0f;
+  float mSunElevation = 29.0f;
 
   // Shadow mapping
   UPtr<ShadowMap> mShadowMap;
