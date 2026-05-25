@@ -239,10 +239,10 @@ void DebugLayer::toggleCamera() noexcept
     const float     fov     = 2.0f * std::atan(1.0f / std::abs(data.proj[1][1]));
     const auto [w, h]       = mVulkanContext->getSwapchain()->getExtent();
     const float aspect      = static_cast<float>(w) / static_cast<float>(h);
-    auto freeCam = makeUnique<FreeCamera>(aspect, glm::degrees(fov), data.nearPlane, data.farPlane);
+    auto        freeCam     = makeUnique<FreeCamera>(aspect, glm::degrees(fov), data.nearPlane, data.farPlane);
     freeCam->setYaw(yaw);
     freeCam->setPitch(pitch);
-    freeCam->setPosition(eyePos);  // Must be last — recomputeViewMatrix() is called here
+    freeCam->setPosition(eyePos);
     mOrbitCamera  = mScene->replaceCamera(std::move(freeCam));
     mIsFreeCamera = true;
   }
@@ -301,4 +301,5 @@ void DebugLayer::createWireframePipeline() noexcept
                            .setName("DebugWireframePipeline")
                            .create(mVulkanContext->getDevice());
 }
+
 }  // namespace ptvc

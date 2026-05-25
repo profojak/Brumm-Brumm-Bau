@@ -124,4 +124,10 @@ float OrbitCamera::getDistance() const noexcept
   return mDistance;
 }
 
+glm::vec3 OrbitCamera::getPosition() const noexcept
+{
+  return mEyePosition;
+}
+
+
 }  // namespace ptvc

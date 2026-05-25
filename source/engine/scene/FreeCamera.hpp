@@ -52,6 +52,8 @@ public:
    */
   [[nodiscard]] CameraData getCameraData() noexcept override;
 
+  [[nodiscard]] glm::vec3 getPosition() const noexcept override;
+
   /**
    * Handle mouse (button and scroll) and keyboard events
    * @param event

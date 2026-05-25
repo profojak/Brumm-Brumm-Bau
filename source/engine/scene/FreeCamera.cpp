@@ -51,6 +51,11 @@ CameraData FreeCamera::getCameraData() noexcept
   return getCameraData(aspect);
 }
 
+glm::vec3 FreeCamera::getPosition() const noexcept
+{
+  return mPosition;
+}
+
 void FreeCamera::onEvent(const SDL_Event& event) noexcept
 {
   static bool isDragging = false;

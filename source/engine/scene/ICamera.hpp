@@ -25,5 +25,7 @@ public:
 
   virtual void onEvent(const SDL_Event& event) noexcept = 0;
   virtual void onUpdate(float deltaTime) noexcept       = 0;
+
+  [[nodiscard]] virtual glm::vec3 getPosition() const noexcept = 0;
 };
 }  // namespace ptvc

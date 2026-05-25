@@ -146,6 +146,8 @@ void Application::run()
 
             ImGui::Text("GPU: %s", mVulkanContext->getDevice()->getName().c_str());
             ImGui::Text("FPS: %.2f (%.2gms)", io.Framerate, io.Framerate ? 1000.0f / io.Framerate : 0.0f);
+            ImGui::Text("Position: %.2f, %.2f, %.2f", mScene->getCamera().getPosition().x,
+                        mScene->getCamera().getPosition().y, mScene->getCamera().getPosition().z);
           }
           ImGui::End();
 
