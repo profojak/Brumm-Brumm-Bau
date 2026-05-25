@@ -70,10 +70,10 @@ private:
   std::mt19937              mEngine;
   std::array<glm::vec4, 16> mObjectColors = {};
 
-  bool              mEnabled      = false;
-  bool              mShowOptions  = false;
-  float             mTessellationFactor = 0.3f;
-  DebugRenderConfig mConfig       = {};
+  bool              mEnabled            = false;
+  bool              mShowOptions        = false;
+  float             mTessellationFactor = 1.0f;
+  DebugRenderConfig mConfig             = {};
 
   Scene*                   mScene;
   SPtr<rhi::VulkanContext> mVulkanContext;
