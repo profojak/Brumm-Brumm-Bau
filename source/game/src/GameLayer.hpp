@@ -7,6 +7,10 @@
 #include <scene/Terrain.hpp>
 #include <Image.hpp>
 
+namespace ptvc {
+class Physics;
+}
+
 class GameLayer : public ptvc::ILayer
 {
 public:
@@ -32,4 +36,8 @@ private:
   SPtr<ptvc::rhi::Image> mDepthBuffer;
 
   UPtr<ptvc::Terrain> mTerrain;
+
+  // Physics
+  SPtr<ptvc::Physics>        mPhysics;
+  SPtr<ptvc::TerrainPhysics> mTerrainPhysics;
 };

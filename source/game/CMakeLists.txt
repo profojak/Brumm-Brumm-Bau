@@ -1,6 +1,7 @@
 add_executable(brumm-brumm-bau
     src/main.cpp
     src/GameLayer.cpp
+    src/Vehicle.cpp
 )
 
 target_link_libraries(brumm-brumm-bau PUBLIC

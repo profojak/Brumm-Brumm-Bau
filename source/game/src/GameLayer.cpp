@@ -1,8 +1,10 @@
 #include "GameLayer.hpp"
+#include "Vehicle.hpp"
 
 #include <core/Application.hpp>
 #include <render/DebugLayer.hpp>
-#include <vulkan/render/GraphicsPipeline.hpp>
+#include <physics/Physics.hpp>
+#include <physics/TerrainPhysics.hpp>
 
 GameLayer::GameLayer()
 {
@@ -12,19 +14,34 @@ GameLayer::GameLayer()
 
   createDepthBuffer();
 
-  mTerrain = makeUnique<ptvc::Terrain>(mVulkanContext, mScene->getDescriptor());
+  mPhysics        = makeShared<ptvc::Physics>();
+  mTerrainPhysics = makeShared<ptvc::TerrainPhysics>(*mPhysics);
+  mTerrain        = makeUnique<ptvc::Terrain>(mVulkanContext, mScene->getDescriptor(), mTerrainPhysics);
   mScene->setTerrain(mTerrain.get());
+
+  const ptvc::GameObjectParams vehicleParams = {
+      .pipeline         = nullptr,
+      .geometry         = nullptr,
+      .name             = "Vehicle",
+      .initialTransform = {},
+  };
+  mScene->addGameObject<Vehicle>(vehicleParams, mPhysics, mVulkanContext, mScene->getDescriptor());
 }
 
-GameLayer::~GameLayer() {}
+GameLayer::~GameLayer() = default;
 
 void GameLayer::onEvent(const SDL_Event& event) noexcept
 {
-  // Forward events to the scene
   mScene->onEvent(event);
 }
 
-void GameLayer::onUpdate(const float deltaTime) noexcept {}
+void GameLayer::onUpdate(const float deltaTime) noexcept
+{
+  if(mPhysics)
+  {
+    mPhysics->update(deltaTime);
+  }
+}
 
 void GameLayer::onRender(const ptvc::rhi::Frame& frame) noexcept
 {
@@ -82,6 +99,12 @@ void GameLayer::onRender(const ptvc::rhi::Frame& frame) noexcept
 
   // Render the tessellated terrain
   mTerrain->onRender(frame, ptvc::DebugRenderMode::eNone);
+
+  // Render all game objects
+  for(const auto& object : mScene->getGameObjects())
+  {
+    object->onRender(frame);
+  }
 
   frame.commandBuffer.endRendering();
 

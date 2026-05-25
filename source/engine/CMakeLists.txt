@@ -43,6 +43,8 @@ add_library(ptvc-engine
     physics/Physics.cpp
     physics/TerrainPhysics.hpp
     physics/TerrainPhysics.cpp
+    physics/VehiclePhysics.hpp
+    physics/VehiclePhysics.cpp
 )
 
 target_link_libraries(ptvc-engine
