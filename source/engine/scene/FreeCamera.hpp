@@ -38,6 +38,11 @@ public:
   void setPitch(float pitch) noexcept;
 
   /**
+   * @param position New camera position
+   */
+  void setPosition(const glm::vec3& position) noexcept;
+
+  /**
    * Get camera uniform data. (ICamera interface)
    */
   [[nodiscard]] CameraData getCameraData(float aspect) noexcept override;

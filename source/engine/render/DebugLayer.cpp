@@ -3,6 +3,7 @@
 #include <imgui.h>
 #include <scene/Terrain.hpp>
 #include <scene/OrbitCamera.hpp>
+#include <scene/FreeCamera.hpp>
 
 namespace ptvc {
 namespace detail {
@@ -173,6 +174,10 @@ void DebugLayer::onDrawUI() noexcept
       }
     }
 
+    ImGui::Text("Current camera: %s", mIsFreeCamera ? "Free" : "Orbit");
+    if(ImGui::Button("Toggle camera"))
+      toggleCamera();
+
     ImGui::End();
   }
 
@@ -217,6 +222,35 @@ void DebugLayer::onDrawUI() noexcept
   ImGui::Text("Show wireframe");
 
   ImGui::End();
+}
+
+void DebugLayer::toggleCamera() noexcept
+{
+  auto& currentCamera = mScene->getCamera();
+
+  if(!mIsFreeCamera)
+  {
+    const CameraData data = currentCamera.getCameraData();
+
+    const glm::vec3 eyePos  = glm::vec3(data.eye);
+    const glm::vec3 forward = glm::normalize(-glm::vec3(data.view[0][2], data.view[1][2], data.view[2][2]));
+    const float     pitch   = std::asin(forward.y);
+    const float     yaw     = std::atan2(forward.x, -forward.z);
+    const float     fov     = 2.0f * std::atan(1.0f / std::abs(data.proj[1][1]));
+    const auto [w, h]       = mVulkanContext->getSwapchain()->getExtent();
+    const float aspect      = static_cast<float>(w) / static_cast<float>(h);
+    auto freeCam = makeUnique<FreeCamera>(aspect, glm::degrees(fov), data.nearPlane, data.farPlane);
+    freeCam->setYaw(yaw);
+    freeCam->setPitch(pitch);
+    freeCam->setPosition(eyePos);  // Must be last — recomputeViewMatrix() is called here
+    mOrbitCamera  = mScene->replaceCamera(std::move(freeCam));
+    mIsFreeCamera = true;
+  }
+  else
+  {
+    mFreeCamera   = mScene->replaceCamera(std::move(mOrbitCamera));
+    mIsFreeCamera = false;
+  }
 }
 
 bool DebugLayer::isEnabled() const noexcept

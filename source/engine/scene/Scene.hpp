@@ -93,6 +93,18 @@ public:
   [[nodiscard]] ICamera& getCamera() noexcept;
 
   /**
+   * Replace the current camera with a new one, returning the old camera.
+   * @param newCamera New camera to set
+   * @return Old camera (ownership transferred)
+   */
+  [[nodiscard]] UPtr<ICamera> replaceCamera(UPtr<ICamera> newCamera) noexcept
+  {
+    auto old = std::move(mCamera);
+    mCamera  = std::move(newCamera);
+    return old;
+  }
+
+  /**
    * Set the terrain for this scene (optional).
    */
   void setTerrain(Terrain* terrain) noexcept { mTerrain = terrain; }

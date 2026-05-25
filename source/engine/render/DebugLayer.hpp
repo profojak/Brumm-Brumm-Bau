@@ -76,6 +76,12 @@ private:
   float             mOrbitCameraDistance = 15.0f;
   DebugRenderConfig mConfig              = {};
 
+  bool          mIsFreeCamera = false;
+  UPtr<ICamera> mOrbitCamera;
+  UPtr<ICamera> mFreeCamera;
+
+  void toggleCamera() noexcept;
+
   Scene*                   mScene;
   SPtr<rhi::VulkanContext> mVulkanContext;
 };

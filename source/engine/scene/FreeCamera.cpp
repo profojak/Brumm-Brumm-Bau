@@ -24,6 +24,12 @@ void FreeCamera::setPitch(const float pitch) noexcept
   mPitch = pitch;
 }
 
+void FreeCamera::setPosition(const glm::vec3& position) noexcept
+{
+  mPosition = position;
+  recomputeViewMatrix();
+}
+
 CameraData FreeCamera::getCameraData(const float aspect) noexcept
 {
   mProjMatrix = glm::perspective(glm::radians(mFOV), aspect, mNear, mFar);
