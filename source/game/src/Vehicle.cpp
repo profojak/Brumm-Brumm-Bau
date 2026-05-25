@@ -22,7 +22,7 @@ Vehicle::Vehicle(const ptvc::GameObjectParams&      params,
   createRenderResources(sceneDescriptor);
 
   // Create the physics simulation
-  mVehiclePhysics  = makeUnique<ptvc::VehiclePhysics>(*mPhysics, glm::vec3(-15.0f, 30.0f, -15.0f));
+  mVehiclePhysics  = makeUnique<ptvc::VehiclePhysics>(*mPhysics, glm::vec3(-7.5f, 12.5f, -70.0f));
   mTransform.scale = {ptvc::VehiclePhysics::HALF_WIDTH * 2.0f, ptvc::VehiclePhysics::HALF_HEIGHT * 2.0f,
                       ptvc::VehiclePhysics::HALF_LENGTH * 2.0f};
 }
