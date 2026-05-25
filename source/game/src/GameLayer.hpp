@@ -42,5 +42,5 @@ private:
   // Physics
   SPtr<ptvc::Physics>        mPhysics;
   SPtr<ptvc::TerrainPhysics> mTerrainPhysics;
-  Vehicle* mVehicle = nullptr;
+  Vehicle*                   mVehicle = nullptr;
 };

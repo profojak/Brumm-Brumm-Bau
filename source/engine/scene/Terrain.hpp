@@ -38,12 +38,18 @@ public:
 
   [[nodiscard]] SPtr<rhi::Pipeline> getPipeline() const noexcept { return mPipeline; }
 
+  [[nodiscard]] const SPtr<rhi::Descriptor>& getDescriptor() const noexcept { return mDescriptor; }
+
   [[nodiscard]] const SPtr<rhi::Image>& getHeightmapImage() const noexcept { return mHeightmapImage; }
   [[nodiscard]] vk::Sampler             getHeightmapSampler() const noexcept { return mHeightmapSampler; }
 
   [[nodiscard]] const SPtr<rhi::Image>& getTerrainTextureFront() const noexcept { return mTerrainTextureFront; }
   [[nodiscard]] const SPtr<rhi::Image>& getTerrainTextureSide() const noexcept { return mTerrainTextureSide; }
   [[nodiscard]] const SPtr<rhi::Image>& getTerrainTextureUp() const noexcept { return mTerrainTextureUp; }
+
+  [[nodiscard]] const SPtr<rhi::Buffer>& getVertexBuffer() const noexcept { return mVertexBuffer; }
+  [[nodiscard]] const SPtr<rhi::Buffer>& getIndexBuffer() const noexcept { return mIndexBuffer; }
+  [[nodiscard]] uint32_t                 getIndexCount() const noexcept { return mIndexCount; }
 
 private:
   void generateBaseMesh() noexcept;

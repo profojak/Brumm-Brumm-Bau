@@ -13,6 +13,7 @@
 
 namespace ptvc {
 
+class ShadowMap;
 class Terrain;
 
 enum SceneDescriptorBindings : uint32_t
@@ -20,6 +21,8 @@ enum SceneDescriptorBindings : uint32_t
   SceneDescriptorBindings_CameraUniform    = 0,
   SceneDescriptorBindings_DirectionalLight = 1,
   SceneDescriptorBindings_PointLight       = 2,
+  SceneDescriptorBindings_ShadowMap        = 3,
+  SceneDescriptorBindings_LightSpace       = 4,
 };
 
 /**
@@ -34,7 +37,7 @@ public:
    */
   explicit Scene(const SPtr<rhi::VulkanContext>& vulkanContext);
 
-  virtual ~Scene() = default;
+  virtual ~Scene();
 
   /**
    * Add a new GameObject to the Scene.
@@ -114,9 +117,14 @@ public:
    */
   [[nodiscard]] Terrain* getTerrain() const noexcept { return mTerrain; }
 
+  [[nodiscard]] ShadowMap* getShadowMap() const noexcept { return mShadowMap.get(); }
+
+  void renderShadowPass(const rhi::Frame& frame) noexcept;
+
 private:
-  // Create the Scene Descriptor and related resources (e.g. uniform buffers).
   void createSceneDescriptor() noexcept;
+
+  void writeShadowDescriptor() noexcept;
 
   SPtr<rhi::VulkanContext> mVulkanContext;
 
@@ -139,5 +147,8 @@ private:
   std::vector<SPtr<rhi::Buffer>> mCameraUniformBuffers;
 
   Terrain* mTerrain = nullptr;
+
+  // Shadow mapping
+  UPtr<ShadowMap> mShadowMap;
 };
 }  // namespace ptvc

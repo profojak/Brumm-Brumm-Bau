@@ -121,6 +121,9 @@ void Application::run()
 
     mScene->onUpdate(deltaTime, frame);
 
+    // Render shadow map from sun's perspective before any layer rendering
+    mScene->renderShadowPass(frame);
+
     // Rendering
     // =============================
     {

@@ -17,6 +17,18 @@ layout(set = 0, binding = 0) uniform CameraData {
     float farPlane;
 } cameraData;
 
+layout(set = 0, binding = 1) uniform DirectionalLight {
+    vec4 color;
+    vec4 direction;
+} dl;
+
+layout(set = 0, binding = 3) uniform sampler2DShadow shadowMap;
+
+layout(set = 0, binding = 4) uniform LightSpace {
+    mat4 lightVP[3];
+    vec4 cascadeSplits;
+} lightSpace;
+
 layout(set = 1, binding = 0) uniform TerrainTessellationData {
     float tessellationFactor;
 } tessData;
@@ -42,10 +54,43 @@ layout(push_constant) uniform TerrainPushConstant {
 const float TEX_SCALE = 0.05;
 const float BLEND_SHARPNESS = 8.0;
 
+const int PCF_SAMPLES = 4;
+
 vec3 colorLOD(float lod)
 {
     float t = log2(lod) / 3.0;
     return vec3(clamp((1.0 - t), 0.0, 1.0), 0.0, clamp(t, 0.0, 1.0));
+}
+
+float computeShadowPCF(vec4 lightSpacePos, int cascadeIndex)
+{
+    vec3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
+    projCoords.xy = projCoords.xy * 0.5 + 0.5;
+    if (projCoords.z > 1.0 || projCoords.z < 0.0 || projCoords.x < 0.0 || projCoords.x > 1.0
+            || projCoords.y < 0.0 || projCoords.y > 1.0)
+    {
+        return 1.0; // Outside shadow map
+    }
+
+    // Map to cascade slice in the horizontal atlas
+    projCoords.x = (projCoords.x / 3.0) + (float(cascadeIndex) / 3.0);
+
+    // Depth bias to counter shadow acne (scaled slightly per cascade since cascade bounds differ)
+    float bias = 0.00025;
+    if (cascadeIndex == 1) bias = 0.0004;
+    if (cascadeIndex == 2) bias = 0.0006;
+    float depth = projCoords.z - bias;
+    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0));
+    float shadow = 0.0;
+
+    // 4-sample Poisson-like pattern for softer shadows
+    shadow += texture(shadowMap, vec3(projCoords.xy + vec2(-0.5, -0.5) * texelSize, depth));
+    shadow += texture(shadowMap, vec3(projCoords.xy + vec2(0.5, -0.5) * texelSize, depth));
+    shadow += texture(shadowMap, vec3(projCoords.xy + vec2(-0.5, 0.5) * texelSize, depth));
+    shadow += texture(shadowMap, vec3(projCoords.xy + vec2(0.5, 0.5) * texelSize, depth));
+    shadow *= 0.25;
+
+    return shadow;
 }
 
 void main()
@@ -61,7 +106,29 @@ void main()
     }
     else if (pc.debugRenderMode == RENDER_MODE_VIS_UV)
     {
-        color = vec3(inUV, 0.0);
+        // Compute view-space depth
+        float depth = -(cameraData.view * vec4(inWorldPosition, 1.0)).z;
+
+        int cascadeIndex = 0;
+        if (depth > lightSpace.cascadeSplits.x) {
+            cascadeIndex = 1;
+        }
+        if (depth > lightSpace.cascadeSplits.y) {
+            cascadeIndex = 2;
+        }
+
+        // Color based on cascade (blended with UV coordinates)
+        vec3 cascadeColor = vec3(1.0, 0.0, 0.0);
+        if (cascadeIndex == 1) {
+            cascadeColor = vec3(0.0, 1.0, 0.0);
+        } else if (cascadeIndex == 2) {
+            cascadeColor = vec3(0.0, 0.0, 1.0);
+        }
+        if (depth > lightSpace.cascadeSplits.z) {
+            cascadeColor = vec3(1.0, 1.0, 1.0);
+        }
+
+        color = mix(vec3(inUV, 0.0), cascadeColor, 0.5);
     }
     else if (pc.debugRenderMode == RENDER_MODE_WIREFRAME)
     {
@@ -87,6 +154,31 @@ void main()
 
         // Blend the three axis-aligned samples
         color = colX * blend.x + colY * blend.y + colZ * blend.z;
+
+        vec3 ambient = color * 1.2;
+        vec3 lightDir = -dl.direction.xyz;
+        float NdotL = max(dot(N, normalize(lightDir)), 0.0);
+        vec3 diffuse = dl.color.rgb * color * NdotL * 2.0;
+
+        // Compute view-space depth
+        float depth = -(cameraData.view * vec4(inWorldPosition, 1.0)).z;
+        int cascadeIndex = 0;
+        if (depth > lightSpace.cascadeSplits.x) {
+            cascadeIndex = 1;
+        }
+        if (depth > lightSpace.cascadeSplits.y) {
+            cascadeIndex = 2;
+        }
+
+        // Shadow factor from PCF
+        float shadowFactor = 1.0;
+        if (depth <= lightSpace.cascadeSplits.z) {
+            vec4 lightSpacePosition = lightSpace.lightVP[cascadeIndex] * vec4(inWorldPosition, 1.0);
+            shadowFactor = computeShadowPCF(lightSpacePosition, cascadeIndex);
+        }
+
+        // Combine lighting with shadow
+        color = ambient + diffuse * shadowFactor;
     }
     outColor = vec4(color, 1.0);
 }

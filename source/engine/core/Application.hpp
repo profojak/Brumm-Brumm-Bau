@@ -22,9 +22,9 @@ public:
   void run();
 
   /**
-         * Instantiate a Scene and set it as the current one.
-         * @tparam TScene Scene class type
-         */
+   * Instantiate a Scene and set it as the current one.
+   * @tparam TScene Scene class type
+   */
   template <class TScene>
     requires(std::is_base_of_v<Scene, TScene>)
   void setScene() noexcept
@@ -33,10 +33,10 @@ public:
   }
 
   /**
-         * Add a Layer to the layer stack managed by the Application.
-         * Only one instance of a specific layer can exist at a time.
-         * @tparam TLayer Layer class type
-         */
+   * Add a Layer to the layer stack managed by the Application.
+   * Only one instance of a specific layer can exist at a time.
+   * @tparam TLayer Layer class type
+   */
   template <class TLayer>
     requires(std::is_base_of_v<ILayer, TLayer>)
   void registerLayer() noexcept
@@ -49,10 +49,10 @@ public:
   }
 
   /**
-         * Get a pointer to the specified layer type.
-         * @tparam TLayer Layer class type
-         * @return Layer when present, nullptr otherwise
-         */
+   * Get a pointer to the specified layer type.
+   * @tparam TLayer Layer class type
+   * @return Layer when present, nullptr otherwise
+   */
   template <class TLayer>
     requires(std::is_base_of_v<ILayer, TLayer>)
   TLayer* getLayer() noexcept
@@ -78,7 +78,7 @@ private:
 
   bool mRunning   = false;
   bool mMinimized = false;
-  bool mShowImGui  = false;
+  bool mShowImGui = false;
 
   UPtr<Scene> mScene;
 

@@ -6,6 +6,7 @@
 #include <physics/Physics.hpp>
 #include <physics/TerrainPhysics.hpp>
 #include <scene/OrbitCamera.hpp>
+#include <scene/ShadowMap.hpp>
 
 GameLayer::GameLayer()
 {
@@ -19,6 +20,9 @@ GameLayer::GameLayer()
   mTerrainPhysics = makeShared<ptvc::TerrainPhysics>(*mPhysics);
   mTerrain        = makeUnique<ptvc::Terrain>(mVulkanContext, mScene->getDescriptor(), mTerrainPhysics);
   mScene->setTerrain(mTerrain.get());
+
+  if(auto* shadowMap = mScene->getShadowMap())
+    shadowMap->createTerrainShadowPipeline(mTerrain->getDescriptor());
 
   const ptvc::GameObjectParams vehicleParams = {
       .pipeline         = nullptr,

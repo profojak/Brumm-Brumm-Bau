@@ -6,6 +6,7 @@ layout (location = 2) in vec2 inUV;
 
 layout (location = 0) out vec3 outNormal;
 layout (location = 1) out vec2 outUV;
+layout (location = 2) out vec3 outWorldPos;
 
 layout (set = 0, binding = 0) uniform CameraData {
     mat4  view;
@@ -28,5 +29,7 @@ void main()
 {
     outNormal   = inNormal;
     outUV       = inUV;
-    gl_Position = cameraData.proj * cameraData.view * inModel * vec4(inPosition, 1.0);
+    vec4 worldPos = inModel * vec4(inPosition, 1.0);
+    outWorldPos = worldPos.xyz;
+    gl_Position = cameraData.proj * cameraData.view * worldPos;
 }

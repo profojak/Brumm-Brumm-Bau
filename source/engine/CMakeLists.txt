@@ -41,6 +41,8 @@ add_library(ptvc-engine
     core/IO.cpp
     core/ApplicationOptions.hpp
     scene/Lights.hpp
+    scene/ShadowMap.hpp
+    scene/ShadowMap.cpp
     physics/Physics.hpp
     physics/Physics.cpp
     physics/TerrainPhysics.hpp
