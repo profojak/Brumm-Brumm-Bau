@@ -41,8 +41,7 @@ void Application::run()
   {
     const auto                         currentTime = std::chrono::high_resolution_clock::now();
     const std::chrono::duration<float> delta       = currentTime - lastTime;
-    const float                        deltaTime   = std::clamp(delta.count(), 0.001f, 0.1f);
-    ;
+    const float                        deltaTime   = std::clamp(delta.count(), 0.0f, 0.1f);
     lastTime = currentTime;
 
     // Handle Events
