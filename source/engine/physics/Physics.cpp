@@ -9,6 +9,8 @@
 
 #include <spdlog/spdlog.h>
 
+#include <cstdarg>
+
 using namespace JPH;
 
 namespace ptvc {
