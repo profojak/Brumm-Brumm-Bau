@@ -166,6 +166,10 @@ void DebugLayer::onDrawUI() noexcept
 
     ImGui::Text("Orbit camera distance:");
     ImGui::SetNextItemWidth(-1.0f);
+    if(auto* orbitCamera = dynamic_cast<OrbitCamera*>(&mScene->getCamera()))
+    {
+      mOrbitCameraDistance = orbitCamera->getDistance();
+    }
     if(ImGui::SliderFloat("##orbitCameraDistance", &mOrbitCameraDistance, 3.0f, 100.0f, "%.1f"))
     {
       if(auto* orbitCamera = dynamic_cast<OrbitCamera*>(&mScene->getCamera()))
