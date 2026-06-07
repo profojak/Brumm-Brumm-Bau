@@ -44,13 +44,15 @@ void GameLayer::onEvent(const SDL_Event& event) noexcept
   mScene->onEvent(event);
 }
 
-void GameLayer::onUpdate(const float deltaTime) noexcept
+void GameLayer::onFixedUpdate(const float fixedDeltaTime) noexcept
 {
   if(mPhysics)
   {
-    mPhysics->update(deltaTime);
+    mPhysics->update(fixedDeltaTime);
   }
 }
+
+void GameLayer::onUpdate(const float deltaTime) noexcept {}
 
 void GameLayer::onRender(const ptvc::rhi::Frame& frame) noexcept
 {

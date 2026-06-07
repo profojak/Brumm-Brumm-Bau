@@ -14,6 +14,8 @@ public:
 
   virtual void onEvent(const SDL_Event& event) noexcept = 0;
 
+  virtual void onFixedUpdate(float fixedDeltaTime) noexcept = 0;
+
   virtual void onUpdate(float deltaTime) noexcept = 0;
 
   virtual void onRender(const rhi::Frame& frame) noexcept = 0;

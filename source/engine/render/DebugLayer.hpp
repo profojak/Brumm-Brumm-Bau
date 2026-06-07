@@ -48,6 +48,8 @@ public:
 
   void onEvent(const SDL_Event& event) noexcept override;
 
+  void onFixedUpdate(float fixedDeltaTime) noexcept override {}
+
   void onUpdate(float deltaTime) noexcept override {}
 
   void onRender(const rhi::Frame& frame) noexcept override;

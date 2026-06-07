@@ -34,6 +34,9 @@ void Application::run()
   mRunning      = true;
   auto lastTime = std::chrono::high_resolution_clock::now();
 
+  constexpr float fixedDeltaTime = 1.0f / 60.0f;
+  float           accumulator    = 0.0f;
+
   while(mRunning)
   {
     const auto                         currentTime = std::chrono::high_resolution_clock::now();
@@ -111,6 +114,18 @@ void Application::run()
       exitWithError("Failed to begin new frame: {}", STYLE_ERROR(beginFrameResult.error()));
     }
     const auto frame = beginFrameResult.value();
+
+    // Handle Fixed Updates (physics)
+    // =============================
+    accumulator += deltaTime;
+    while(accumulator >= fixedDeltaTime)
+    {
+      for(const auto& layer : mLayers)
+      {
+        layer->onFixedUpdate(fixedDeltaTime);
+      }
+      accumulator -= fixedDeltaTime;
+    }
 
     // Handle Updates
     // =============================
