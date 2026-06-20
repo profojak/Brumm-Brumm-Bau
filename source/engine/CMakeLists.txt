@@ -9,8 +9,6 @@ add_library(ptvc-engine
     ${IMGUI_DIR}/imgui_demo.cpp ${IMGUI_DIR}/imgui_tables.cpp ${IMGUI_DIR}/imgui_widgets.cpp
     ${IMGUI_DIR}/misc/cpp/imgui_stdlib.cpp
 
-    impl/stb.impl.cpp
-
     core/Application.cpp
     core/Application.hpp
     wsi/WindowCreateInfo.hpp
@@ -49,6 +47,10 @@ add_library(ptvc-engine
     physics/TerrainPhysics.cpp
     physics/VehiclePhysics.hpp
     physics/VehiclePhysics.cpp
+    impl/stb.impl.cpp
+    impl/cgltf.impl.cpp
+    impl/glTFModel.hpp
+    impl/glTFModel.cpp
 )
 
 target_link_libraries(ptvc-engine
@@ -62,6 +64,7 @@ target_include_directories(ptvc-engine
     ${PROJECT_SOURCE_DIR}/external/sdl/include
     ${PROJECT_SOURCE_DIR}/external/spdlog/include
     ${PROJECT_SOURCE_DIR}/external/stb
+    ${PROJECT_SOURCE_DIR}/external/cgltf
 )
 
 target_compile_definitions(ptvc-engine PUBLIC
