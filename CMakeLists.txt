@@ -10,6 +10,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 add_compile_definitions("$<$<NOT:$<CONFIG:Debug>>:NDEBUG>")
 
 set(JOLT_ENABLE_TESTS OFF CACHE BOOL "Disable Jolt unit tests" FORCE)
+set(USE_STATIC_MSVC_RUNTIME_LIBRARY OFF CACHE BOOL "Use dynamic MSVC runtime" FORCE)
 set(JPH_USE_VK OFF CACHE BOOL "Disable Vulkan compute shaders" FORCE)
 set(JPH_USE_MTL OFF CACHE BOOL "Disable Metal compute shaders" FORCE)
 
