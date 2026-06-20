@@ -2,6 +2,10 @@ add_executable(brumm-brumm-bau
     src/main.cpp
     src/GameLayer.cpp
     src/Vehicle.cpp
+    src/Checkpoints.cpp
+    src/Trees.cpp
+    src/Timer.cpp
+    src/Exhaust.cpp
 )
 
 target_link_libraries(brumm-brumm-bau PUBLIC

@@ -31,6 +31,8 @@ add_library(ptvc-engine
     scene/Terrain.cpp
     render/DebugLayer.hpp
     render/DebugLayer.cpp
+    render/EdgeDetect.hpp
+    render/EdgeDetect.cpp
     scene/FreeCamera.hpp
     scene/FreeCamera.cpp
     scene/OrbitCamera.hpp
@@ -49,8 +51,8 @@ add_library(ptvc-engine
     physics/VehiclePhysics.cpp
     impl/stb.impl.cpp
     impl/cgltf.impl.cpp
-    impl/glTFModel.hpp
-    impl/glTFModel.cpp
+    scene/glTF.hpp
+    scene/glTF.cpp
 )
 
 target_link_libraries(ptvc-engine

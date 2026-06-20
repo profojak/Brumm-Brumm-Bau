@@ -229,6 +229,25 @@ void VehiclePhysics::getTransform(glm::vec3& outTranslate, glm::quat& outRotatio
   outRotation = glm::quat(rotation.GetW(), rotation.GetX(), rotation.GetY(), rotation.GetZ());
 }
 
+void VehiclePhysics::getWheelTransform(EWheel wheel, glm::vec3& outTranslate, glm::quat& outRotation) const
+{
+  const int idx = static_cast<int>(wheel);
+  if(idx < 0 || idx >= kWheelCount || mWheelBodyIds[idx].IsInvalid())
+  {
+    outTranslate = glm::vec3(0.0f);
+    outRotation  = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+    return;
+  }
+
+  auto&       bodyInterface = mPhysics.getBodyInterface();
+  const RVec3 position      = bodyInterface.GetPosition(mWheelBodyIds[idx]);
+  const Quat  rotation      = bodyInterface.GetRotation(mWheelBodyIds[idx]);
+
+  outTranslate = glm::vec3(static_cast<float>(position.GetX()), static_cast<float>(position.GetY()),
+                           static_cast<float>(position.GetZ()));
+  outRotation  = glm::quat(rotation.GetW(), rotation.GetX(), rotation.GetY(), rotation.GetZ());
+}
+
 glm::vec3 VehiclePhysics::getPosition() const
 {
   if(mCarBodyId.IsInvalid())

@@ -1,11 +1,31 @@
 #include "Vehicle.hpp"
 
+#include <core/IO.hpp>
 #include <physics/Physics.hpp>
 #include <vulkan/render/GraphicsPipeline.hpp>
-#include <scene/primitives/Cube.hpp>
+#include <scene/glTF.hpp>
 #include <scene/Vertex.hpp>
 
+#include <glm/gtc/matrix_inverse.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/quaternion.hpp>
+
 #include <spdlog/spdlog.h>
+
+namespace {
+struct WheelDef
+{
+  const char*  node;
+  ptvc::EWheel physics;
+};
+
+constexpr WheelDef kWheels[ptvc::VehiclePhysics::kWheelCount] = {
+    {"wheel_FR", ptvc::EWheel::LeftFront},
+    {"wheel_FL", ptvc::EWheel::RightFront},
+    {"wheel_RR", ptvc::EWheel::LeftRear},
+    {"wheel_RL", ptvc::EWheel::RightRear},
+};
+}  // namespace
 
 Vehicle::Vehicle(const ptvc::GameObjectParams&      params,
                  SPtr<ptvc::Physics>                physics,
@@ -18,20 +38,17 @@ Vehicle::Vehicle(const ptvc::GameObjectParams&      params,
   assert(mPhysics && "Vehicle requires a valid Physics pointer");
   assert(mVulkanContext && "Vehicle requires a valid VulkanContext pointer");
 
-  createDummyTextureDescriptor();
+  createTextureDescriptor();
   createRenderResources(sceneDescriptor);
 
-  // Create the physics simulation
-  mVehiclePhysics  = makeUnique<ptvc::VehiclePhysics>(*mPhysics, glm::vec3(-7.5f, 12.5f, -70.0f));
-  mTransform.scale = {ptvc::VehiclePhysics::HALF_WIDTH * 2.0f, ptvc::VehiclePhysics::HALF_HEIGHT * 2.0f,
-                      ptvc::VehiclePhysics::HALF_LENGTH * 2.0f};
+  mVehiclePhysics = makeUnique<ptvc::VehiclePhysics>(*mPhysics, glm::vec3(-7.5f, 12.5f, -70.0f));
 }
 
 Vehicle::~Vehicle()
 {
-  if(mDummySampler)
+  if(mTextureSampler)
   {
-    mVulkanContext->getDevice()->getHandle().destroySampler(mDummySampler);
+    mVulkanContext->getDevice()->getHandle().destroySampler(mTextureSampler);
   }
 }
 
@@ -84,7 +101,6 @@ void Vehicle::onUpdate(float /*dt*/, const ptvc::rhi::Frame& /*frame*/) noexcept
   if(!mVehiclePhysics)
     return;
 
-  // Compute steering and speed from keyboard state
   float steeringAngle = 0.0f;
   float speed         = 0.0f;
 
@@ -108,52 +124,147 @@ glm::vec3 Vehicle::getPosition() const
   return mTransform.translate;
 }
 
+void Vehicle::collectDebugMeshes(std::vector<ptvc::GameObject::DebugMesh>& out) const noexcept
+{
+  // Reconstruct the same chassis model matrix used by onRender so the debug
+  // view matches the in-game size (kModelScale + chassis-center shift).
+  const glm::vec3  shift    = kModelChassisCenter * kModelScale;
+  const glm::mat4  carModel = glm::translate(glm::mat4(1.0f), mTransform.translate) * glm::toMat4(mTransform.rotation)
+                              * glm::translate(glm::mat4(1.0f), -shift) * glm::scale(glm::mat4(1.0f), glm::vec3(kModelScale));
+
+  if(mGeometry)
+    out.push_back({carModel, mGeometry.get()});
+
+  for(int i = 0; i < kWheelCount; ++i)
+  {
+    if(mWheelGeometry[i])
+      out.push_back({wheelModelMatrix(i), mWheelGeometry[i].get()});
+  }
+}
+
 void Vehicle::onRender(const ptvc::rhi::Frame& frame) noexcept
 {
-  const ptvc::GPUGameObjectData pushConstant = {
-      .model              = mTransform.getModel(),
+  const glm::vec3 shift = kModelChassisCenter * kModelScale;
+  const glm::mat4 carModel = glm::translate(glm::mat4(1.0f), mTransform.translate) * glm::toMat4(mTransform.rotation)
+                             * glm::translate(glm::mat4(1.0f), -shift) * glm::scale(glm::mat4(1.0f), glm::vec3(kModelScale));
+
+  const ptvc::GPUGameObjectData bodyPC = {
+      .model              = carModel,
       .solidColor         = {1.0f, 0.25f, 0.05f, 1.0f},
       .materialProperties = {0.1f, 0.7f, 0.2f, 10.0f},
       .showFresnel        = 0,
-      .useExampleTexture  = 0,
+      .useExampleTexture  = 1,
   };
 
   mPipeline->bind(frame, frame.commandBuffer);
-  mPipeline->pushConstant(&pushConstant, frame.commandBuffer);
-
+  mPipeline->pushConstant(&bodyPC, frame.commandBuffer);
   mGeometry->draw(frame.commandBuffer);
+
+  for(int i = 0; i < kWheelCount; ++i)
+  {
+    if(!mWheelGeometry[i])
+      continue;
+
+    const ptvc::GPUGameObjectData wheelPC = {
+        .model              = wheelModelMatrix(i),
+        .solidColor         = {1.0f, 0.25f, 0.05f, 1.0f},
+        .materialProperties = {0.1f, 0.7f, 0.2f, 10.0f},
+        .showFresnel        = 0,
+        .useExampleTexture  = 1,
+    };
+
+    mPipeline->pushConstant(&wheelPC, frame.commandBuffer);
+    mWheelGeometry[i]->draw(frame.commandBuffer);
+  }
 }
 
-void Vehicle::createDummyTextureDescriptor()
+void Vehicle::onRenderShadow(const ptvc::rhi::Frame& frame, ptvc::rhi::Pipeline& shadowPipeline, const glm::mat4& lightVP) noexcept
 {
-  const uint32_t whitePixel = 0xFFFFFFFF;
+  const glm::vec3 shift = kModelChassisCenter * kModelScale;
+  const glm::mat4 carModel = glm::translate(glm::mat4(1.0f), mTransform.translate) * glm::toMat4(mTransform.rotation)
+                             * glm::translate(glm::mat4(1.0f), -shift) * glm::scale(glm::mat4(1.0f), glm::vec3(kModelScale));
 
-  // Staging buffer
+  struct alignas(16) ShadowPushConstants
+  {
+    glm::mat4 model;
+    glm::mat4 lightVP;
+  };
+
+  shadowPipeline.bind(frame, frame.commandBuffer);
+
+  if(mGeometry)
+  {
+    const ShadowPushConstants pc{carModel, lightVP};
+    shadowPipeline.pushConstant(&pc, frame.commandBuffer);
+    mGeometry->draw(frame.commandBuffer);
+  }
+
+  for(int i = 0; i < kWheelCount; ++i)
+  {
+    if(!mWheelGeometry[i])
+      continue;
+
+    const ShadowPushConstants pc{wheelModelMatrix(i), lightVP};
+    shadowPipeline.pushConstant(&pc, frame.commandBuffer);
+    mWheelGeometry[i]->draw(frame.commandBuffer);
+  }
+}
+
+glm::mat4 Vehicle::wheelModelMatrix(int wheelIndex) const noexcept
+{
+  glm::vec3 wpos{};
+  glm::quat wrot(1.0f, 0.0f, 0.0f, 0.0f);
+  if(mVehiclePhysics)
+    mVehiclePhysics->getWheelTransform(kWheels[wheelIndex].physics, wpos, wrot);
+
+  const glm::mat4 Mphys = glm::translate(glm::mat4(1.0f), wpos + glm::vec3(0.0f, 0.15f, 0.0f)) * glm::mat4_cast(wrot);
+  const glm::mat4 Mbake = mWheelBake[wheelIndex];
+  const glm::mat4 C =
+      glm::rotate(glm::mat4(1.0f), -glm::pi<float>() * 0.5f, glm::vec3(0.0f, 0.0f, 1.0f)) * glm::mat4(glm::mat3(Mbake));
+  const glm::mat4 S = glm::scale(glm::mat4(1.0f), glm::vec3(kModelScale));
+
+  return Mphys * C * S * glm::inverse(Mbake);
+}
+
+void Vehicle::createTextureDescriptor()
+{
+  constexpr const char* kTexturePath = "assets/models/vehicle/textures/luaz_transparent_baseColor.png";
+
+  auto texData = ptvc::io::loadTextureFromFile(kTexturePath, STBI_rgb_alpha);
+  if(!texData.pixels)
+  {
+    exitWithError("Failed to load vehicle texture: {}", kTexturePath);
+  }
+
+  spdlog::info("Vehicle texture loaded from disk: {}x{} ({} channels)", texData.width, texData.height, texData.channels);
+
+  const auto imageSize = static_cast<vk::DeviceSize>(texData.width) * static_cast<vk::DeviceSize>(texData.height) * 4;
+
   auto stagingResult = ptvc::rhi::Buffer::create({
-      .size        = sizeof(whitePixel),
+      .size        = imageSize,
       .hostVisible = true,
       .device      = mVulkanContext->getDevice(),
   });
   exitOnError(stagingResult);
   auto staging = std::move(stagingResult.value());
-  staging->setData(&whitePixel, sizeof(whitePixel), 0);
+  staging->setData(texData.pixels, imageSize, 0);
+  texData.free();
 
-  // Dummy image
   auto imageResult = ptvc::rhi::Image::create({
-      .extent     = {1, 1},
+      .extent     = {static_cast<uint32_t>(texData.width), static_cast<uint32_t>(texData.height)},
       .usageFlags = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst,
       .format     = vk::Format::eR8G8B8A8Unorm,
-      .mipmapping = false,
-      .label      = "Vehicle-DummyTexture",
+      .mipmapping = true,
+      .label      = "Vehicle-Texture",
       .device     = mVulkanContext->getDevice(),
   });
   exitOnError(imageResult);
-  mDummyTexture = std::move(imageResult.value());
+  mTexture = std::move(imageResult.value());
 
-  // Upload
+  // Copy from staging buffer to image and generate mipmaps
   mVulkanContext->executeImmediateCommand([&](const vk::CommandBuffer& cb) {
     const auto barrier = vk::ImageMemoryBarrier2()
-                             .setImage(mDummyTexture->getHandle())
+                             .setImage(mTexture->getHandle())
                              .setSubresourceRange({vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1})
                              .setOldLayout(vk::ImageLayout::eUndefined)
                              .setSrcAccessMask(vk::AccessFlagBits2::eNone)
@@ -163,24 +274,25 @@ void Vehicle::createDummyTextureDescriptor()
                              .setDstStageMask(vk::PipelineStageFlagBits2::eTransfer);
     cb.pipelineBarrier2(vk::DependencyInfo().setImageMemoryBarriers(barrier));
 
-    const auto region =
-        vk::BufferImageCopy2().setBufferOffset(0).setImageSubresource({vk::ImageAspectFlagBits::eColor, 0, 0, 1}).setImageExtent({1, 1, 1});
+    const auto region = vk::BufferImageCopy2()
+                            .setBufferOffset(0)
+                            .setImageSubresource({vk::ImageAspectFlagBits::eColor, 0, 0, 1})
+                            .setImageExtent({static_cast<uint32_t>(texData.width), static_cast<uint32_t>(texData.height), 1});
     cb.copyBufferToImage2(vk::CopyBufferToImageInfo2()
                               .setSrcBuffer(staging->getHandle())
-                              .setDstImage(mDummyTexture->getHandle())
+                              .setDstImage(mTexture->getHandle())
                               .setDstImageLayout(vk::ImageLayout::eTransferDstOptimal)
                               .setRegions(region));
+  });
 
-    const auto barrier2 = vk::ImageMemoryBarrier2()
-                              .setImage(mDummyTexture->getHandle())
-                              .setSubresourceRange({vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1})
-                              .setOldLayout(vk::ImageLayout::eTransferDstOptimal)
-                              .setSrcAccessMask(vk::AccessFlagBits2::eTransferWrite)
-                              .setSrcStageMask(vk::PipelineStageFlagBits2::eTransfer)
-                              .setNewLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-                              .setDstAccessMask(vk::AccessFlagBits2::eShaderRead)
-                              .setDstStageMask(vk::PipelineStageFlagBits2::eFragmentShader);
-    cb.pipelineBarrier2(vk::DependencyInfo().setImageMemoryBarriers(barrier2));
+  // Generate mipmaps and transition to shader-readable layout
+  mVulkanContext->executeImmediateCommand([&](const vk::CommandBuffer& cb) {
+    mTexture->generateMipmaps(
+        cb,
+        std::make_optional<ptvc::rhi::ImageState>({vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite,
+                                                   vk::PipelineStageFlagBits2::eTransfer}),
+        std::make_optional<ptvc::rhi::ImageState>({vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eShaderRead,
+                                                   vk::PipelineStageFlagBits2::eFragmentShader}));
   });
 
   // Sampler
@@ -188,37 +300,36 @@ void Vehicle::createDummyTextureDescriptor()
                          .setMagFilter(vk::Filter::eLinear)
                          .setMinFilter(vk::Filter::eLinear)
                          .setMipmapMode(vk::SamplerMipmapMode::eLinear)
-                         .setAddressModeU(vk::SamplerAddressMode::eClampToEdge)
-                         .setAddressModeV(vk::SamplerAddressMode::eClampToEdge)
-                         .setAddressModeW(vk::SamplerAddressMode::eClampToEdge)
+                         .setAddressModeU(vk::SamplerAddressMode::eRepeat)
+                         .setAddressModeV(vk::SamplerAddressMode::eRepeat)
+                         .setAddressModeW(vk::SamplerAddressMode::eRepeat)
                          .setMinLod(0.0f)
-                         .setMaxLod(0.0f);
-  mDummySampler = mVulkanContext->getDevice()->getHandle().createSampler(samplerInfo);
+                         .setMaxLod(static_cast<float>(mTexture->getProperties().levelCount));
+  mTextureSampler  = mVulkanContext->getDevice()->getHandle().createSampler(samplerInfo);
 
-  // Descriptor
   constexpr vk::ShaderStageFlags fragStage  = vk::ShaderStageFlagBits::eFragment;
   auto                           descResult = ptvc::rhi::Descriptor::create({
-                                .bindings =
+      .bindings =
           {
               {0, vk::DescriptorType::eCombinedImageSampler, 1, fragStage},
           },
-                                .setCount = mVulkanContext->getSwapchain()->getImageCount(),
-                                .label    = "Vehicle-DummyTextureDescriptor",
-                                .device   = mVulkanContext->getDevice(),
+      .setCount = mVulkanContext->getSwapchain()->getImageCount(),
+      .label    = "Vehicle-TextureDescriptor",
+      .device   = mVulkanContext->getDevice(),
   });
   exitOnError(descResult);
-  mDummyTextureDescriptor = std::move(descResult.value());
+  mTextureDescriptor = std::move(descResult.value());
 
-  for(uint32_t i = 0; i < mDummyTextureDescriptor->getSetCount(); i++)
+  for(uint32_t i = 0; i < mTextureDescriptor->getSetCount(); i++)
   {
     const auto imageInfo =
-        vk::DescriptorImageInfo().setSampler(mDummySampler).setImageView(mDummyTexture->getImageView()).setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+        vk::DescriptorImageInfo().setSampler(mTextureSampler).setImageView(mTexture->getImageView()).setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
     const auto write = vk::WriteDescriptorSet()
                            .setImageInfo(imageInfo)
                            .setDstBinding(0)
                            .setDescriptorCount(1)
                            .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-                           .setDstSet(mDummyTextureDescriptor->getSet(i));
+                           .setDstSet(mTextureDescriptor->getSet(i));
     mVulkanContext->getDevice()->getHandle().updateDescriptorSets(write, {});
   }
 }
@@ -227,10 +338,9 @@ void Vehicle::createRenderResources(const SPtr<ptvc::rhi::Descriptor>& sceneDesc
 {
   using enum vk::ShaderStageFlagBits;
 
-  // Create the pipeline with phong shaders
   auto pipeline = ptvc::rhi::GraphicsPipelineBuilder()
                       .addDescriptor(0, sceneDescriptor)
-                      .addDescriptor(1, mDummyTextureDescriptor)
+                      .addDescriptor(1, mTextureDescriptor)
                       .addPushConstantRange({eVertex | eFragment, 0, sizeof(ptvc::GPUGameObjectData)})
                       .addVertexType<ptvc::Vertex>()
                       .addShader({"assets/shaders/phong.vert.glsl", eVertex})
@@ -240,9 +350,22 @@ void Vehicle::createRenderResources(const SPtr<ptvc::rhi::Descriptor>& sceneDesc
                       .setName("VehiclePipeline")
                       .create(mVulkanContext->getDevice());
 
-  auto cube = makeUnique<ptvc::Cube>(1.0f);
-  cube->init(mVulkanContext.get());
+  constexpr const char* kModelPath = "assets/models/vehicle/scene.gltf";
+
+  ptvc::glTF_Options bodyOpts;
+  bodyOpts.excludeNodes = {"wheel_FR", "wheel_FL", "wheel_RL", "wheel_RR"};
+  auto body             = makeUnique<ptvc::glTF>(kModelPath, bodyOpts);
+  body->init(mVulkanContext.get());
+
+  for(int i = 0; i < kWheelCount; ++i)
+  {
+    mWheelBake[i] = body->nodeWorldMatrix(kWheels[i].node);
+
+    auto wheel = makeUnique<ptvc::glTF>(kModelPath, ptvc::glTF_Options{.includeNodes = {kWheels[i].node}});
+    wheel->init(mVulkanContext.get());
+    mWheelGeometry[i] = std::move(wheel);
+  }
 
   mPipeline = std::move(pipeline);
-  mGeometry = std::move(cube);
+  mGeometry = std::move(body);
 }

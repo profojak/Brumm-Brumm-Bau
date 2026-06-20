@@ -121,7 +121,7 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0) {
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
-float computeShadowPCF(vec4 lightSpacePos, int cascadeIndex)
+float computeShadowPCF(vec4 lightSpacePos, int cascadeIndex, vec3 normal, vec3 lightDir)
 {
     vec3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
     projCoords.xy = projCoords.xy * 0.5 + 0.5;
@@ -133,9 +133,17 @@ float computeShadowPCF(vec4 lightSpacePos, int cascadeIndex)
     }
 
     projCoords.x = (projCoords.x / 3.0) + (float(cascadeIndex) / 3.0);
-    float bias = 0.00015;
-    if (cascadeIndex == 1) bias = 0.0003;
-    if (cascadeIndex == 2) bias = 0.0005;
+
+    // Slope-scaled bias: small bias when facing the light, larger at grazing angles
+    float baseBias = 0.00005;
+    float maxBias  = 0.0005;
+    if (cascadeIndex == 1) { baseBias = 0.00008; maxBias = 0.0008; }
+    if (cascadeIndex == 2) { baseBias = 0.0001;  maxBias = 0.0012; }
+
+    float dotNL = max(dot(normalize(normal), normalize(lightDir)), 0.0);
+    float bias = max(baseBias * tan(acos(dotNL)), baseBias);
+    bias = min(bias, maxBias);
+
     float depth = projCoords.z - bias;
 
     vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0));
@@ -157,7 +165,12 @@ void main() {
     vec3 reflectivity = fresnelSchlick(dot(n, -v), F0);
 
     // Texture or inColor depending on "useExampleTexture"
-    vec3 diffuseColor = (pc.useExampleTexture == 1) ? texture(uTexture, frag_in.uv).rgb : pc.inColor.rgb;
+    vec4 texColor = texture(uTexture, frag_in.uv);
+    if (pc.useExampleTexture == 1 && texColor.a < 0.9)
+    {
+        discard;
+    }
+    vec3 diffuseColor = (pc.useExampleTexture == 1) ? texColor.rgb : pc.inColor.rgb;
 
     // Start with ambient illumination contribution:
     vec3 color = diffuseColor * pc.materialProperties.x;
@@ -177,7 +190,7 @@ void main() {
     float shadowFactor = 1.0;
     if (depth <= lightSpace.cascadeSplits.z) {
         vec4 lightSpacePosition = lightSpace.lightVP[cascadeIndex] * vec4(frag_in.positionWorld, 1.0);
-        shadowFactor = computeShadowPCF(lightSpacePosition, cascadeIndex);
+        shadowFactor = computeShadowPCF(lightSpacePosition, cascadeIndex, n, -dl_data.direction.xyz);
     }
 
     // Add directional light's contribution (shadowed):

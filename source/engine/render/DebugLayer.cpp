@@ -22,6 +22,8 @@ namespace detail {
       return "Wireframe";
     case eGame:
       return "Game";
+    case eDepthEdges:
+      return "Depth";
   }
   return "Unknown";
 }
@@ -109,28 +111,42 @@ void DebugLayer::onRender(const rhi::Frame& frame) noexcept
                                    .setImageView(mDepthBuffer->getImageView())
                                    .setLoadOp(vk::AttachmentLoadOp::eClear)
                                    .setStoreOp(vk::AttachmentStoreOp::eStore);
-  const auto renderingInfo = vk::RenderingInfo()
-                                 .setColorAttachments(colorAttachment)
-                                 .setPDepthAttachment(&depthAttachment)
-                                 .setLayerCount(1)
-                                 .setRenderArea(vk::Rect2D{{0, 0}, mVulkanContext->getSwapchain()->getExtent()});
+  const auto renderingInfo   = vk::RenderingInfo()
+                                   .setColorAttachments(colorAttachment)
+                                   .setPDepthAttachment(&depthAttachment)
+                                   .setLayerCount(1)
+                                   .setRenderArea(vk::Rect2D{{0, 0}, mVulkanContext->getSwapchain()->getExtent()});
 
   frame.commandBuffer.beginRendering(renderingInfo);
+  std::vector<GameObject::DebugMesh> debugMeshes;
   for(auto&& [objIndex, obj] : enumerate(mScene->getGameObjects()))
   {
-    const auto pushConstant0 = obj->getGPUData();
-    const auto pushConstant1 = DebugPipeline_PCS{
-        .model      = pushConstant0.model,
-        .solidColor = mObjectColors[objIndex % mObjectColors.size()],
-        .renderMode = std::to_underlying(mConfig.mode),
-        .objIndex   = static_cast<int32_t>(objIndex),
-    };
+    debugMeshes.clear();
+    obj->collectDebugMeshes(debugMeshes);
+    if(debugMeshes.empty())
+      continue;
+
+    const auto solidColor = mObjectColors[objIndex % mObjectColors.size()];
+    const auto renderMode = std::to_underlying(mConfig.mode);
+    const auto objIdx     = static_cast<int32_t>(objIndex);
 
     auto& pipeline = (mConfig.mode == DebugRenderMode::eWireframe) ? mWireframePipeline : mPipeline;
     pipeline->bind(frame, frame.commandBuffer);
-    pipeline->pushConstant(&pushConstant1, frame.commandBuffer);
 
-    obj->getGeometry()->draw(frame.commandBuffer);
+    for(const auto& mesh : debugMeshes)
+    {
+      if(mesh.geometry == nullptr)
+        continue;
+
+      const auto pushConstant1 = DebugPipeline_PCS{
+          .model      = mesh.model,
+          .solidColor = solidColor,
+          .renderMode = renderMode,
+          .objIndex   = objIdx,
+      };
+      pipeline->pushConstant(&pushConstant1, frame.commandBuffer);
+      mesh.geometry->draw(frame.commandBuffer);
+    }
   }
 
   // Render terrain with debug mode pushed to its shader
@@ -141,7 +157,24 @@ void DebugLayer::onRender(const rhi::Frame& frame) noexcept
     terrain->onRender(frame, mConfig.mode);
   }
 
+  // Hack to only render in wireframe mode
+  if(mConfig.mode == DebugRenderMode::eWireframe)
+  {
+    for(const auto& object : mScene->getGameObjects())
+    {
+      object->onRenderDebug(frame);
+    }
+  }
+
   frame.commandBuffer.endRendering();
+
+  if(mEdgeDetect && (mConfig.mode == DebugRenderMode::eDepthEdges))
+  {
+    mEdgeDetect->setThreshold(mEdgeThreshold);
+    const auto cameraData = mScene->getCamera().getCameraData();
+    mEdgeDetect->setClipPlanes(cameraData.nearPlane, cameraData.farPlane);
+    mEdgeDetect->render(frame);
+  }
 
   if(mIsFirstRender)
   {
@@ -197,9 +230,18 @@ void DebugLayer::onDrawUI() noexcept
     if(ImGui::SliderFloat("##sunElevation", &sunElevation, 0.0f, 90.0f, "%.1f°"))
       mScene->setSunDirection(sunAzimuth, sunElevation);
 
+    ImGui::SeparatorText("Edge Detection");
+
+    ImGui::Text("Threshold:");
+    ImGui::SetNextItemWidth(-1.0f);
+    if(ImGui::SliderFloat("##edgeThreshold", &mEdgeThreshold, 0.000001f, 0.0005f, "%.6f"))
+    {
+      if(mEdgeDetect)
+        mEdgeDetect->setThreshold(mEdgeThreshold);
+    }
+
     ImGui::End();
   }
-
   if(!mConfig.enableUI || !mEnabled)
   {
     return;
@@ -239,6 +281,13 @@ void DebugLayer::onDrawUI() noexcept
   }
   ImGui::SameLine();
   ImGui::Text("Show wireframe");
+
+  if(ImGui::SmallButton("Depth"))
+  {
+    mConfig.mode = DebugRenderMode::eDepthEdges;
+  }
+  ImGui::SameLine();
+  ImGui::Text("Show depth buffer");
 
   ImGui::End();
 }
@@ -281,8 +330,8 @@ void DebugLayer::createDebugPipeline() noexcept
 {
   using enum vk::ShaderStageFlagBits;
   mDepthBuffer = rhi::Image::create({
-                                        .extent     = mVulkanContext->getSwapchain()->getExtent(),
-                                        .usageFlags = vk::ImageUsageFlagBits::eDepthStencilAttachment,
+                                        .extent = mVulkanContext->getSwapchain()->getExtent(),
+                                        .usageFlags = vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled,
                                         .format     = vk::Format::eD32Sfloat,
                                         .mipmapping = false,
                                         .samples    = vk::SampleCountFlagBits::e1,
@@ -290,6 +339,10 @@ void DebugLayer::createDebugPipeline() noexcept
                                         .device     = mVulkanContext->getDevice(),
                                     })
                      .value();
+
+  // Red contour edges in debug view
+  mEdgeDetect = makeUnique<EdgeDetect>(mVulkanContext, mDepthBuffer, glm::vec3(1.0f, 0.0f, 0.0f), true);
+  mEdgeDetect->setThreshold(mEdgeThreshold);
 
   mPipeline = rhi::GraphicsPipelineBuilder()
                   .addDescriptor(0, mScene->getDescriptor())

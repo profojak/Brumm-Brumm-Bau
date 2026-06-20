@@ -184,29 +184,8 @@ void ShadowMap::renderShadowPass(const rhi::Frame& frame, Scene& scene) noexcept
         }
       }
 
-      // Render game objects
-      struct alignas(16) ObjectPushConstants
-      {
-        glm::mat4 model;
-        glm::mat4 lightVP;
-      };
-
       for(const auto& object : scene.getGameObjects())
-      {
-        if(!object->getGeometry())
-          continue;
-
-        mObjectShadowPipeline->bind(frame, frame.commandBuffer);
-
-        const ObjectPushConstants pushData{
-            .model   = object->getGPUData().model,
-            .lightVP = mCascadeLightVPs[cascade],
-        };
-
-        mObjectShadowPipeline->pushConstant(&pushData, frame.commandBuffer);
-
-        object->getGeometry()->draw(frame.commandBuffer);
-      }
+        object->onRenderShadow(frame, *mObjectShadowPipeline, mCascadeLightVPs[cascade]);
     }
 
     frame.commandBuffer.endRendering();
@@ -246,10 +225,10 @@ void ShadowMap::createTerrainShadowPipeline(const SPtr<rhi::Descriptor>& terrain
                                .configure([](rhi::GraphicsPipelineState& state) {
                                  state.inputAssemblyState.setTopology(vk::PrimitiveTopology::ePatchList);
                                  state.tessellationState = vk::PipelineTessellationStateCreateInfo().setPatchControlPoints(4);
-                                 state.rasterizationState.setCullMode(vk::CullModeFlagBits::eFront);
+                                 state.rasterizationState.setCullMode(vk::CullModeFlagBits::eBack);
                                  state.rasterizationState.setDepthBiasEnable(true);
-                                 state.rasterizationState.setDepthBiasConstantFactor(1.5f);
-                                 state.rasterizationState.setDepthBiasSlopeFactor(2.0f);
+                                 state.rasterizationState.setDepthBiasConstantFactor(0.5f);
+                                 state.rasterizationState.setDepthBiasSlopeFactor(1.5f);
                                  state.rasterizationState.setDepthBiasClamp(0.0f);
                                })
                                .setName("TerrainShadowPipeline")
@@ -336,10 +315,10 @@ void ShadowMap::createObjectShadowPipeline() noexcept
                               .addShader({"assets/shaders/shadow.vert.glsl", eVertex})
                               .setDepthFormat(vk::Format::eD32Sfloat)
                               .configure([](rhi::GraphicsPipelineState& state) {
-                                state.rasterizationState.setCullMode(vk::CullModeFlagBits::eFront);
+                                state.rasterizationState.setCullMode(vk::CullModeFlagBits::eBack);
                                 state.rasterizationState.setDepthBiasEnable(true);
-                                state.rasterizationState.setDepthBiasConstantFactor(1.5f);
-                                state.rasterizationState.setDepthBiasSlopeFactor(2.0f);
+                                state.rasterizationState.setDepthBiasConstantFactor(0.5f);
+                                state.rasterizationState.setDepthBiasSlopeFactor(1.5f);
                                 state.rasterizationState.setDepthBiasClamp(0.0f);
                               })
                               .setName("ObjectShadowPipeline")

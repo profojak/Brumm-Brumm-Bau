@@ -6,6 +6,7 @@
 #include <scene/Scene.hpp>
 #include <scene/Terrain.hpp>
 #include <Image.hpp>
+#include <render/EdgeDetect.hpp>
 
 namespace ptvc {
 class Physics;
@@ -40,6 +41,7 @@ private:
   SPtr<ptvc::rhi::Image> mDepthBuffer;
 
   UPtr<ptvc::Terrain> mTerrain;
+  UPtr<EdgeDetect>    mEdgeDetect;
 
   // Physics
   SPtr<ptvc::Physics>        mPhysics;

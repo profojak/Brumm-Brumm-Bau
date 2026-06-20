@@ -62,7 +62,7 @@ vec3 colorLOD(float lod)
     return vec3(clamp((1.0 - t), 0.0, 1.0), 0.0, clamp(t, 0.0, 1.0));
 }
 
-float computeShadowPCF(vec4 lightSpacePos, int cascadeIndex)
+float computeShadowPCF(vec4 lightSpacePos, int cascadeIndex, vec3 normal, vec3 lightDir)
 {
     vec3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
     projCoords.xy = projCoords.xy * 0.5 + 0.5;
@@ -75,10 +75,16 @@ float computeShadowPCF(vec4 lightSpacePos, int cascadeIndex)
     // Map to cascade slice in the horizontal atlas
     projCoords.x = (projCoords.x / 3.0) + (float(cascadeIndex) / 3.0);
 
-    // Depth bias to counter shadow acne (scaled slightly per cascade since cascade bounds differ)
-    float bias = 0.00025;
-    if (cascadeIndex == 1) bias = 0.0004;
-    if (cascadeIndex == 2) bias = 0.0006;
+    // Slope-scaled bias: small bias when facing the light, larger at grazing angles
+    float baseBias = 0.00008;
+    float maxBias  = 0.0008;
+    if (cascadeIndex == 1) { baseBias = 0.00012; maxBias = 0.0012; }
+    if (cascadeIndex == 2) { baseBias = 0.00018; maxBias = 0.0018; }
+
+    float dotNL = max(dot(normalize(normal), normalize(lightDir)), 0.0);
+    float bias = max(baseBias * tan(acos(dotNL)), baseBias);
+    bias = min(bias, maxBias);
+
     float depth = projCoords.z - bias;
     vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0));
     float shadow = 0.0;
@@ -174,7 +180,7 @@ void main()
         float shadowFactor = 1.0;
         if (depth <= lightSpace.cascadeSplits.z) {
             vec4 lightSpacePosition = lightSpace.lightVP[cascadeIndex] * vec4(inWorldPosition, 1.0);
-            shadowFactor = computeShadowPCF(lightSpacePosition, cascadeIndex);
+            shadowFactor = computeShadowPCF(lightSpacePosition, cascadeIndex, N, lightDir);
         }
 
         // Combine lighting with shadow

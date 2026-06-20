@@ -1,5 +1,7 @@
 #include <spdlog/spdlog.h>
 
+#include <glm/gtc/constants.hpp>
+
 #include <core/Application.hpp>
 #include <scene/OrbitCamera.hpp>
 #include "GameLayer.hpp"
@@ -32,8 +34,7 @@ int main()
   // Set scene, register layers
   app->setScene<ptvc::Scene>();
 
-  // Initialize an orbit camera that will follow the vehicle
-  app->getScene()->initCamera<ptvc::OrbitCamera>(1280.0f / 720.0f);
+  app->getScene()->initCamera<ptvc::OrbitCamera>(1280.0f / 720.0f, 65.0f, 0.01f, 512.0f, 15.0f, glm::pi<float>() * 0.5f, 0.5f);
 
   app->registerLayer<GameLayer>();
 

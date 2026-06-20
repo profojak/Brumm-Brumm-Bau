@@ -1,6 +1,11 @@
 #include "GameLayer.hpp"
 #include "Vehicle.hpp"
+#include "Checkpoints.hpp"
+#include "Trees.hpp"
+#include "Timer.hpp"
+#include "Exhaust.hpp"
 
+#include <glm/glm.hpp>
 #include <core/Application.hpp>
 #include <render/DebugLayer.hpp>
 #include <physics/Physics.hpp>
@@ -15,6 +20,9 @@ GameLayer::GameLayer()
   mScene          = app->getScene();
 
   createDepthBuffer();
+
+  // Edge detection with black contour edges
+  mEdgeDetect = makeUnique<EdgeDetect>(mVulkanContext, mDepthBuffer, glm::vec3(0.0f), false);
 
   mPhysics        = makeShared<ptvc::Physics>();
   mTerrainPhysics = makeShared<ptvc::TerrainPhysics>(*mPhysics);
@@ -31,6 +39,46 @@ GameLayer::GameLayer()
       .initialTransform = {},
   };
   mVehicle = mScene->addGameObject<Vehicle>(vehicleParams, mPhysics, mVulkanContext, mScene->getDescriptor());
+
+  // CPU exhaust gas particles (instanced cubes) trailing the car.
+  const ptvc::GameObjectParams exhaustParams = {
+      .pipeline         = nullptr,
+      .geometry         = nullptr,
+      .name             = "Exhaust",
+      .initialTransform = {},
+  };
+  mScene->addGameObject<Exhaust>(exhaustParams, mVehicle, mVulkanContext, mScene->getDescriptor());
+
+  // Trees
+  const ptvc::GameObjectParams treeParams = {
+      .pipeline         = nullptr,
+      .geometry         = nullptr,
+      .name             = "Trees",
+      .initialTransform = {},
+  };
+  mScene->addGameObject<Trees>(treeParams, mPhysics, mVulkanContext, mScene->getDescriptor());
+
+  const ptvc::GameObjectParams checkpointParams = {
+      .pipeline         = nullptr,
+      .geometry         = nullptr,
+      .name             = "Checkpoints",
+      .initialTransform = {},
+  };
+  Checkpoints* checkpoints = mScene->addGameObject<Checkpoints>(checkpointParams, mVulkanContext, mScene->getDescriptor());
+  if(checkpoints)
+  {
+    // Let the stars spin faster as the vehicle approaches each checkpoint.
+    checkpoints->setVehiclePositionProvider([this]() { return mVehicle->getPosition(); });
+  }
+
+  // HUD
+  const ptvc::GameObjectParams timerParams = {
+      .pipeline         = nullptr,
+      .geometry         = nullptr,
+      .name             = "Timer",
+      .initialTransform = {},
+  };
+  mScene->addGameObject<Timer>(timerParams, mVulkanContext, checkpoints);
 
   // Let the orbit camera follow the vehicle
   if(auto* orbitCam = dynamic_cast<ptvc::OrbitCamera*>(&mScene->getCamera()))
@@ -119,6 +167,16 @@ void GameLayer::onRender(const ptvc::rhi::Frame& frame) noexcept
 
   frame.commandBuffer.endRendering();
 
+  // Detect black contour edges on the depth buffer
+  if(mEdgeDetect)
+  {
+    const auto cameraData = mScene->getCamera().getCameraData();
+    if(const auto* debugLayer = ptvc::Application::getApplication()->getLayer<ptvc::DebugLayer>())
+      mEdgeDetect->setThreshold(debugLayer->getEdgeThreshold());
+    mEdgeDetect->setClipPlanes(cameraData.nearPlane, cameraData.farPlane);
+    mEdgeDetect->render(frame);
+  }
+
   if(mFirstRender)
     mFirstRender = false;
 }
@@ -127,7 +185,7 @@ void GameLayer::createDepthBuffer() noexcept
 {
   const auto result = ptvc::rhi::Image::create({
       .extent     = mVulkanContext->getSwapchain()->getExtent(),
-      .usageFlags = vk::ImageUsageFlagBits::eDepthStencilAttachment,
+      .usageFlags = vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled,
       .format     = vk::Format::eD32Sfloat,
       .mipmapping = false,
       .samples    = vk::SampleCountFlagBits::e1,

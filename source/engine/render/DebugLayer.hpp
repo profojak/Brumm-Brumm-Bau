@@ -5,16 +5,18 @@
 #include "Image.hpp"
 #include "core/Application.hpp"
 #include "core/Layer.hpp"
+#include "render/EdgeDetect.hpp"
 #include "render/GraphicsPipeline.hpp"
 
 namespace ptvc {
 enum class DebugRenderMode : int32_t
 {
-  eNone      = 0,  // Flat shaded render with a per-object constant color
-  eNormal    = 1,  // Visualize vertex normals
-  eUV        = 2,  // Visualize vertex UVs
-  eWireframe = 3,  // Wireframe render
-  eGame      = 4,  // Game render
+  eNone       = 0,  // Flat shaded render with a per-object constant color
+  eNormal     = 1,  // Visualize vertex normals
+  eUV         = 2,  // Visualize vertex UVs
+  eWireframe  = 3,  // Wireframe render
+  eGame       = 4,  // Game render
+  eDepthEdges = 5,  // Depth buffer visualization
 };
 
 // Behaviour and rendering options
@@ -60,6 +62,9 @@ public:
 
   [[nodiscard]] float getTessellationFactor() const noexcept { return mTessellationFactor; }
 
+  [[nodiscard]] float getEdgeThreshold() const noexcept { return mEdgeThreshold; }
+  void                setEdgeThreshold(float t) noexcept { mEdgeThreshold = t; }
+
 private:
   void createDebugPipeline() noexcept;
   void createWireframePipeline() noexcept;
@@ -81,6 +86,9 @@ private:
   bool          mIsFreeCamera = false;
   UPtr<ICamera> mOrbitCamera;
   UPtr<ICamera> mFreeCamera;
+
+  UPtr<EdgeDetect> mEdgeDetect;
+  float            mEdgeThreshold = 0.0001f;
 
   void toggleCamera() noexcept;
 

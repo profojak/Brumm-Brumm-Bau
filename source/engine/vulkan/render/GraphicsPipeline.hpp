@@ -82,6 +82,7 @@ public:
 
     mVertexInput.attributeDescriptions.append_range(T::getAttributes(nextLocation, binding));
     mVertexInput.bindingDescriptions.push_back(T::getBinding(binding));
+    mVertexInput._lastLocation = static_cast<int32_t>(nextLocation + T::getAttributeCount() - 1);
     return *this;
   }
 

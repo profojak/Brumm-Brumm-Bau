@@ -59,6 +59,9 @@ public:
   /** Read current body transform from physics into glm types. */
   void getTransform(glm::vec3& outTranslate, glm::quat& outRotation) const;
 
+  /** Read current world transform of a given wheel from physics. */
+  void getWheelTransform(EWheel wheel, glm::vec3& outTranslate, glm::quat& outRotation) const;
+
   /** Return the car body world-space position. */
   [[nodiscard]] glm::vec3 getPosition() const;
 
